@@ -1,0 +1,44 @@
+{
+  "name": "frp-web",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start-docker": "nuxt start --hostname 0.0.0.0 --port $NUXT_PORT",
+    "release": "bumpp",
+    "lint": "eslint --cache --flag unstable_ts_config",
+    "postinstall": "nuxt prepare",
+    "prepare": "simple-git-hooks"
+  },
+  "dependencies": {
+    "nuxt": "^3.14.1592",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@iconify/json": "^2.2.277",
+    "@imba97/eslint-config": "^0.0.5",
+    "@types/fs-extra": "^11.0.4",
+    "@unocss/eslint-plugin": "^0.64.1",
+    "@unocss/nuxt": "^0.64.1",
+    "@unocss/reset": "^0.64.1",
+    "@vueuse/nuxt": "^12.0.0",
+    "bumpp": "^9.8.1",
+    "eslint": "^9.15.0",
+    "fs-extra": "^11.2.0",
+    "lint-staged": "^15.2.10",
+    "sass-embedded": "^1.81.0",
+    "simple-git-hooks": "^2.11.1",
+    "unocss": "^0.64.1",
+    "unocss-preset-useful": "^0.8.0"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --cache --flag unstable_ts_config --fix"
+  }
+}
