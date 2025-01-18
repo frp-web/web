@@ -9,7 +9,7 @@
     "preview": "nuxt preview",
     "start-docker": "nuxt start --hostname 0.0.0.0 --port $NUXT_PORT",
     "release": "bumpp",
-    "lint": "eslint --cache --flag unstable_ts_config",
+    "lint": "eslint --cache",
     "postinstall": "nuxt prepare",
     "prepare": "simple-git-hooks"
   },
@@ -39,6 +39,6 @@
     "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
-    "*": "eslint --cache --flag unstable_ts_config --fix"
+    "*": "eslint --cache --fix"
   }
 }
