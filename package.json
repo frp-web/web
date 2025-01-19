@@ -21,6 +21,7 @@
   "devDependencies": {
     "@iconify/json": "^2.2.297",
     "@imba97/eslint-config": "^0.0.5",
+    "@primevue/nuxt-module": "^4.2.5",
     "@types/fs-extra": "^11.0.4",
     "@unocss/eslint-plugin": "^65.4.2",
     "@unocss/nuxt": "^65.4.2",
