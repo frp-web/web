@@ -18,8 +18,8 @@
     "nuxt": "^3.17.5",
     "pinia": "^3.0.3",
     "swiper": "^11.2.8",
-    "vue": "latest",
-    "vue-router": "latest"
+    "vue": "^3.5.16",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@iconify/json": "^2.2.346",
