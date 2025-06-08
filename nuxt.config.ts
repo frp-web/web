@@ -1,6 +1,6 @@
-import type { ComponentResolver } from 'unplugin-vue-components/types'
 import { fileURLToPath } from 'node:url'
 import lodashImports from 'lodash-imports'
+import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 import component from 'unplugin-vue-components/vite'
 
 const r = (path: string) => fileURLToPath(new URL(path, import.meta.url))
@@ -37,20 +37,13 @@ export default defineNuxtConfig({
       component({
         dts: r('./.nuxt/lib-components.d.ts'),
         resolvers: [
-          ((name: string) => {
-            if (name.startsWith('A'))
-              return { importName: name.slice(1), path: 'ant-design-vue/es' }
-          }) as ComponentResolver
+          AntDesignVueResolver({
+            importStyle: 'less',
+            prefix: 'Ant'
+          })
         ]
       })
-    ],
-    css: {
-      preprocessorOptions: {
-        scss: {
-          api: 'modern-compiler'
-        }
-      }
-    }
+    ]
   },
 
   typescript: {

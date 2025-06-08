@@ -9,13 +9,13 @@ body,
 
 <template>
   <div id="nuxt-app">
-    <AConfigProvider :theme>
+    <AntConfigProvider :theme>
       <NuxtLayout>
         <template #header>
           <LayoutsHeader />
         </template>
       </NuxtLayout>
-    </AConfigProvider>
+    </AntConfigProvider>
   </div>
 </template>
 

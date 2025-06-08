@@ -1,5 +1,5 @@
 <template>
-  <AMenu v-model:selected-keys="current" :items="items" w-64 />
+  <AntMenu v-model:selected-keys="current" :items="items" w-64 />
 </template>
 
 <script lang="ts" setup>
