@@ -8,6 +8,19 @@ const r = (path: string) => fileURLToPath(new URL(path, import.meta.url))
 const lodash = lodashImports({ hasFrom: true })
 
 export default defineNuxtConfig({
+  app: {
+    head: {
+      title: 'FRP Web',
+      link: [
+        {
+          rel: 'icon',
+          type: 'image/vnd.microsoft.icon',
+          href: '/favicon.ico'
+        }
+      ]
+    }
+  },
+
   modules: [
     '@vueuse/nuxt',
     '@unocss/nuxt',
@@ -20,12 +33,13 @@ export default defineNuxtConfig({
   ],
 
   colorMode: {
-    classSuffix: ''
+    classSuffix: '',
+    preference: 'light'
   },
 
   imports: {
     dirs: [
-      'composables/**'
+      'app/composables/**'
     ],
     imports: [
       ...lodash.imports
