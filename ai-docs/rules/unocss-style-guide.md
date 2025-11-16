@@ -89,6 +89,28 @@
 
 **注意**：只使用已有配置，不要新增 shortcuts
 
+## 图标使用
+
+使用 UnoCSS presetIcons，图标直接作为属性使用，不要放在 `class` 中：
+
+```vue
+<!-- ✅ 推荐 -->
+<span i-carbon-logo-github />
+
+<span i-carbon-logout />
+
+<span i-mdi-home />
+
+<!-- ❌ 避免 -->
+<span class="i-carbon-logo-github" />
+```
+
+支持任何 Iconify 图标集，常用的有：
+- `i-carbon-*` - Carbon 设计系统
+- `i-mdi-*` - Material Design Icons
+- `i-heroicons-*` - Heroicons
+- `i-tabler-*` - Tabler Icons
+
 ## 响应式写法
 
 ```vue
