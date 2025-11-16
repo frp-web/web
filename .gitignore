@@ -27,3 +27,6 @@ logs
 .eslintcache
 
 public/assets/fonts/
+
+# Local FRP runtime workspace
+.frp-web/

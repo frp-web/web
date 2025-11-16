@@ -1,31 +1,28 @@
 <style lang="scss">
 html,
 body,
-#__nuxt,
-#nuxt-app {
+#__nuxt {
   --uno: size-screen;
 }
 </style>
 
 <template>
-  <div id="nuxt-app" of-x-hidden of-y-auto flex="~ col" dark="bg-dark">
-    <NuxtRouteAnnouncer />
-    <LayoutHeader shrink-0>
-      <template #header>
-        <slot name="header" />
-      </template>
-    </LayoutHeader>
-    <div flex-1 flex="~ row" of-x-hidden>
-      <LayoutSider />
-      <LayoutMain />
+  <ClientOnly>
+    <div size-screen flex="~ col" bg-base>
+      <LayoutsHeader />
+      <div min-h-0 w-full flex flex-1 flex-row>
+        <LayoutSider />
+        <LayoutMain>
+          <slot />
+        </LayoutMain>
+      </div>
+      <LayoutFooter />
     </div>
-    <LayoutFooter />
-  </div>
+  </ClientOnly>
 </template>
 
 <script lang="ts" setup>
 import LayoutFooter from './footer.vue'
-import LayoutHeader from './header.vue'
 import LayoutMain from './main.vue'
 import LayoutSider from './sider.vue'
 </script>
