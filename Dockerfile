@@ -13,9 +13,6 @@ RUN npm install -g pnpm
 # 安装项目依赖
 RUN pnpm install
 
-# Cloudflare Workers 部署模式
-ENV CLOUDFLARE_MODE=false
-
 # 构建 Nuxt.js 应用程序
 RUN pnpm build
 
