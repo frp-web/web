@@ -24,8 +24,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import ConfigTabs from '~/components/config/tabs/index.vue'
 import { useConfigStore } from '~/stores/config'
+
+import ConfigTabs from './-components/tabs/index.vue'
 
 definePageMeta({
   layout: 'default'

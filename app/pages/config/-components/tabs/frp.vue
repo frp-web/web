@@ -42,7 +42,7 @@
 
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
-import FrpEditor from '~/components/config/FrpEditor.vue'
+import FrpEditor from '~/pages/config/-components/frp-editor.vue'
 import { useConfigStore } from '~/stores/config'
 
 const store = useConfigStore()
