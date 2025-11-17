@@ -12,35 +12,25 @@
 <script lang="ts" setup>
 import type { ConfigProviderProps } from 'ant-design-vue'
 import { getAntdTheme } from '~/constants/theme'
-import { ColorMode } from '~/utils/color-mode'
+import { AppInitializer } from '~/utils/initializer'
 
 const colorMode = useColorMode()
 
 const theme = computed<ConfigProviderProps['theme']>(() => {
   // colorMode.value 是解析后的真实主题（light/dark）
   // colorMode.preference 是用户选择的偏好（system/light/dark）
-  const isDark = colorMode.value === ColorMode.Dark
-  return getAntdTheme(isDark) as ConfigProviderProps['theme']
+  return getAntdTheme(colorMode.value === 'dark') as ConfigProviderProps['theme']
 })
 
 const authStore = useAuthStore()
 
-if (import.meta.client) {
-  onBeforeMount(async () => {
-    await authStore.checkAuth()
+// 应用初始化
+onMounted(() => {
+  AppInitializer.init()
+})
 
-    // 读取并设置主题
-    try {
-      const appConfig = await $fetch('/api/config/app')
-      if (appConfig.theme) {
-        colorMode.preference = appConfig.theme
-      }
-    }
-    catch (error) {
-      console.error('Failed to load app config:', error)
-    }
-
-    authStore.isInitialized = true
-  })
-}
+// 应用清理
+onBeforeUnmount(() => {
+  AppInitializer.cleanup()
+})
 </script>
