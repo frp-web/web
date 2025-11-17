@@ -22,6 +22,13 @@ const breakpoints = {
 }
 
 export default defineConfig({
+  content: {
+    pipeline: {
+      include: [
+        /app\/.*\.(vue|ts)$/
+      ]
+    }
+  },
   theme: {
     breakpoints
   },
