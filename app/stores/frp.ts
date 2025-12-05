@@ -1,5 +1,8 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import dayjs from 'dayjs'
+import duration from 'dayjs/plugin/duration'
+
+// 配置 Day.js
+dayjs.extend(duration)
 
 export const useFrpStore = defineStore('frp', () => {
   // FRP 状态相关
@@ -41,21 +44,21 @@ export const useFrpStore = defineStore('frp', () => {
       return ''
     }
 
-    // 将毫秒转换为可读的时间格式
-    const ms = currentUptime.value
-    const seconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
+    // 使用 dayjs 格式化持续时间
+    const dur = dayjs.duration(currentUptime.value)
+    const days = Math.floor(dur.asDays())
+    const hours = dur.hours()
+    const minutes = dur.minutes()
+    const seconds = dur.seconds()
 
     if (days > 0) {
-      return `${days}天 ${hours % 24}小时`
+      return `${days}天 ${hours}小时`
     }
     else if (hours > 0) {
-      return `${hours}小时 ${minutes % 60}分钟`
+      return `${hours}小时 ${minutes}分钟`
     }
     else if (minutes > 0) {
-      return `${minutes}分钟 ${seconds % 60}秒`
+      return `${minutes}分钟 ${seconds}秒`
     }
     else {
       return `${seconds}秒`
