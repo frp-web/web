@@ -68,15 +68,13 @@ export const useFrpStore = defineStore('frp', () => {
   // 启动运行时间计时器
   function startUptimeTimer() {
     stopUptimeTimer()
+    // 记录启动计时器时的时间戳和初始 uptime
+    const startTimerAt = Date.now()
+    const initialUptime = currentUptime.value
+
     // 启动计时器每秒更新运行时间
     uptimeTimer = setInterval(() => {
-      if (processInfo.value?.startTime) {
-        currentUptime.value = Date.now() - processInfo.value.startTime
-      }
-      else if (processInfo.value?.uptime) {
-        // 如果有初始 uptime，则继续累加
-        currentUptime.value = processInfo.value.uptime + (Date.now() - (processInfo.value.startTime || Date.now()))
-      }
+      currentUptime.value = initialUptime + (Date.now() - startTimerAt)
     }, 1000)
   }
 
