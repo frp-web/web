@@ -7,6 +7,7 @@ export default defineEventHandler(() => {
 
   return {
     theme: appStorage.theme,
+    frpMode: appStorage.frpMode,
     frp: {
       version: frpPackageStorage.version,
       releaseName: frpPackageStorage.releaseName,

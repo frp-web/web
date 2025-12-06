@@ -12,6 +12,7 @@ interface FrpApplyResponse {
 }
 
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type FrpMode = 'client' | 'server'
 
 type FrpPackageStatus = 'idle' | 'updating'
 
@@ -28,6 +29,7 @@ interface FrpPackageState {
 
 interface AppSettingsResponse {
   theme: ThemeMode
+  frpMode: FrpMode
   frp: FrpPackageState
 }
 
@@ -53,6 +55,8 @@ export const useConfigStore = defineStore('config', () => {
 
   const theme = ref<ThemeMode>('system')
   const themeSaving = ref(false)
+
+  const frpMode = ref<FrpMode>('server')
 
   // 监听主题变化，同步到 color-mode
   if (import.meta.client) {
@@ -139,6 +143,7 @@ export const useConfigStore = defineStore('config', () => {
   async function fetchAppSettings() {
     const data = await $fetch<AppSettingsResponse>('/api/config/app')
     theme.value = data.theme
+    frpMode.value = data.frpMode
     Object.assign(frpPackage, data.frp)
   }
 
@@ -204,6 +209,7 @@ export const useConfigStore = defineStore('config', () => {
     frpUpdatedAt,
     theme,
     themeSaving,
+    frpMode,
     frpPackage,
     frpPackageLoading,
     accountDraft,
