@@ -28,10 +28,12 @@ export const useAuthStore = defineStore('auth', () => {
       if (data.hasUser && import.meta.client && localStorage.getItem('isAuthenticated') === 'true') {
         isAuthenticated.value = true
       }
+      isInitialized.value = true
       return data
     }
     catch (err) {
       error.value = extractErrorMessage(err)
+      isInitialized.value = true
       throw err
     }
   }

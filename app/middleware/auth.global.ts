@@ -16,17 +16,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  // 未认证，尝试从 localStorage 恢复
-  try {
-    await authStore.checkAuth()
-    // 如果恢复后仍未认证，跳转到登录页
-    if (!authStore.isAuthenticated) {
+  // 如果还未初始化，执行初始化检查
+  if (!authStore.isInitialized) {
+    try {
+      await authStore.checkAuth()
+    }
+    catch {
+      // 验证失败，清除 localStorage 并跳转到登录页
+      if (import.meta.client) {
+        localStorage.removeItem('isAuthenticated')
+      }
       return navigateTo('/login')
     }
   }
-  catch {
-    // 验证失败，清除 localStorage 并跳转到登录页
-    localStorage.removeItem('isAuthenticated')
+
+  // 初始化完成后，检查认证状态
+  if (!authStore.isAuthenticated) {
     return navigateTo('/login')
   }
 })

@@ -1,4 +1,3 @@
-import { useAuthStore } from '~/stores/auth'
 import { useFrpStore } from '~/stores/frp'
 
 /**
@@ -18,25 +17,11 @@ export class AppInitializer {
       return
     }
 
-    // 初始化认证状态
-    this.initAuthStore()
-
     // 初始化 FRP 状态管理
     this.initFrpStore()
 
     // 标记为已初始化
     this.initialized = true
-  }
-
-  /**
-   * 初始化认证状态
-   * 检查用户是否已登录
-   */
-  private static initAuthStore() {
-    const authStore = useAuthStore()
-    authStore.checkAuth().finally(() => {
-      authStore.isInitialized = true
-    })
   }
 
   /**
