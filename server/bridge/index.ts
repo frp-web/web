@@ -5,9 +5,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { FrpBridge } from 'frp-bridge'
 import { getConfigDir, getConfigPath, getDataDir, getWorkDir } from '~~/app/constants/paths'
-import { checkFrpInstalled } from '~~/server/utils/frp-checker'
 import { appStorage } from '~~/src/storages'
-import { frpPackageStorage } from '~~/src/storages/frp'
 import { customCommands } from './commands'
 
 export interface RawConfigSnapshot {
@@ -88,17 +86,6 @@ function createBridge(): FrpBridge {
       eventBus.emit('frp-event', event)
     }
   })
-
-  // 检查是否满足启动条件（有可执行文件、有配置），如果满足则自动启动
-  // 使用已有的检查函数，只检查本地文件是否存在，不调用远程API
-  const installStatus = checkFrpInstalled(frpPackageStorage.version ?? undefined)
-
-  if (installStatus.installed) {
-    // 异步启动，避免阻塞初始化过程
-    bridge.getProcessManager().start().catch((error) => {
-      console.error('Failed to auto-start FRP service:', error)
-    })
-  }
 
   return bridge
 }
