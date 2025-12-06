@@ -54,6 +54,14 @@ export const useConfigStore = defineStore('config', () => {
   const theme = ref<ThemeMode>('system')
   const themeSaving = ref(false)
 
+  // 监听主题变化，同步到 color-mode
+  if (import.meta.client) {
+    const colorMode = useColorMode()
+    watch(theme, (newTheme) => {
+      colorMode.preference = newTheme
+    })
+  }
+
   const frpPackage = reactive<FrpPackageState>({
     version: null,
     releaseName: null,
