@@ -1,3 +1,4 @@
+import type { ProxyConfig } from 'frp-bridge'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 
@@ -8,6 +9,11 @@ export const useFrpStore = defineStore('frp', () => {
   // FRP 状态相关
   const isRunning = ref(false)
   const loading = ref(true)
+
+  // 隧道管理
+  const tunnels = ref<ProxyConfig[]>([])
+  const tunnelLoading = ref(false)
+  const tunnelError = ref<string | null>(null)
 
   // 进程信息
   const processInfo = ref<{
@@ -22,6 +28,7 @@ export const useFrpStore = defineStore('frp', () => {
 
   // SSE 连接
   let eventSource: EventSource | null = null
+  let tunnelEventSource: EventSource | null = null
 
   // FRP 状态文本
   const frpStatusText = computed(() => {
@@ -200,12 +207,140 @@ export const useFrpStore = defineStore('frp', () => {
     connectSSE()
   }
 
+  // 隧道管理方法
+
+  /**
+   * 获取隧道列表
+   */
+  async function fetchTunnels(nodeId?: string) {
+    tunnelLoading.value = true
+    tunnelError.value = null
+
+    try {
+      const { listTunnels } = await import('~/utils/tunnel-api')
+      tunnels.value = await listTunnels(nodeId)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch tunnels'
+      tunnelError.value = message
+      console.error('[Store] Fetch tunnels error:', error)
+    }
+    finally {
+      tunnelLoading.value = false
+    }
+  }
+
+  /**
+   * 添加隧道
+   */
+  async function addTunnel(config: ProxyConfig, nodeId?: string) {
+    try {
+      const { addTunnel: apiAddTunnel } = await import('~/utils/tunnel-api')
+      await apiAddTunnel(config, nodeId)
+      // 刷新隧道列表
+      await fetchTunnels(nodeId)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add tunnel'
+      tunnelError.value = message
+      console.error('[Store] Add tunnel error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 更新隧道
+   */
+  async function updateTunnel(
+    config: Partial<ProxyConfig> & { name: string },
+    nodeId?: string
+  ) {
+    try {
+      const { updateTunnel: apiUpdateTunnel } = await import('~/utils/tunnel-api')
+      await apiUpdateTunnel(config, nodeId)
+      // 刷新隧道列表
+      await fetchTunnels(nodeId)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update tunnel'
+      tunnelError.value = message
+      console.error('[Store] Update tunnel error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 删除隧道
+   */
+  async function removeTunnel(name: string, nodeId?: string) {
+    try {
+      const { removeTunnel: apiRemoveTunnel } = await import('~/utils/tunnel-api')
+      await apiRemoveTunnel(name, nodeId)
+      // 刷新隧道列表
+      await fetchTunnels(nodeId)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove tunnel'
+      tunnelError.value = message
+      console.error('[Store] Remove tunnel error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 订阅隧道状态变化（SSE）
+   */
+  async function subscribeTunnelEvents(nodeId?: string) {
+    if (tunnelEventSource) {
+      tunnelEventSource.close()
+    }
+
+    try {
+      const { subscribeTunnelEvents: apiSubscribeTunnelEvents } = await import('~/utils/tunnel-api')
+      const unsubscribe = apiSubscribeTunnelEvents(
+        nodeId,
+        (event) => {
+          // 处理隧道状态变化事件
+          if (event.type === 'tunnel.status' || event.type === 'tunnel.list') {
+            // 可选：自动刷新隧道列表
+            fetchTunnels(nodeId)
+          }
+        },
+        (error) => {
+          console.error('[Store] Tunnel event error:', error)
+          tunnelError.value = error.message
+        }
+      )
+
+      // 保存取消订阅函数供后续使用
+      tunnelEventSource = { close: unsubscribe } as any
+    }
+    catch (error) {
+      console.error('[Store] Subscribe tunnel events error:', error)
+    }
+  }
+
+  /**
+   * 断开隧道事件连接
+   */
+  function unsubscribeTunnelEvents() {
+    if (tunnelEventSource) {
+      tunnelEventSource.close()
+      tunnelEventSource = null
+    }
+  }
+
   return {
     // 状态
     isRunning,
     loading,
     processInfo,
     currentUptime,
+
+    // 隧道管理状态
+    tunnels,
+    tunnelLoading,
+    tunnelError,
 
     // 计算属性
     frpStatusText,
@@ -218,6 +353,12 @@ export const useFrpStore = defineStore('frp', () => {
     disconnectSSE,
     startFrp,
     stopFrp,
-    restartFrp
+    restartFrp,
+    fetchTunnels,
+    addTunnel,
+    updateTunnel,
+    removeTunnel,
+    subscribeTunnelEvents,
+    unsubscribeTunnelEvents
   }
 })
