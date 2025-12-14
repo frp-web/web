@@ -25,10 +25,10 @@ export async function listTunnels(nodeId?: string): Promise<any[]> {
     let response: TunnelListResponse
 
     if (frpMode === 'server' && nodeId) {
-      response = await $fetch(`/api/node/${nodeId}/tunnel/list`)
+      response = await $fetch<TunnelListResponse>(`/api/node/${nodeId}/tunnel/list`)
     }
     else {
-      response = await $fetch('/api/config/tunnel/list')
+      response = await $fetch<TunnelListResponse>('/api/config/tunnel/list')
     }
 
     if (!response.success) {
@@ -54,13 +54,13 @@ export async function addTunnel(config: any, nodeId?: string): Promise<void> {
     let response: TunnelOperationResponse
 
     if (frpMode === 'server' && nodeId) {
-      response = await $fetch(`/api/node/${nodeId}/tunnel/add`, {
+      response = await $fetch<TunnelOperationResponse>(`/api/node/${nodeId}/tunnel/add`, {
         method: 'POST',
         body: config
       })
     }
     else {
-      response = await $fetch('/api/config/tunnel/add', {
+      response = await $fetch<TunnelOperationResponse>('/api/config/tunnel/add', {
         method: 'POST',
         body: config
       })
@@ -90,13 +90,13 @@ export async function updateTunnel(
     let response: TunnelOperationResponse
 
     if (frpMode === 'server' && nodeId) {
-      response = await $fetch(`/api/node/${nodeId}/tunnel/update`, {
+      response = await $fetch<TunnelOperationResponse>(`/api/node/${nodeId}/tunnel/update`, {
         method: 'PUT',
         body: config
       })
     }
     else {
-      response = await $fetch('/api/config/tunnel/update', {
+      response = await $fetch<TunnelOperationResponse>('/api/config/tunnel/update', {
         method: 'PUT',
         body: config
       })
@@ -123,13 +123,13 @@ export async function removeTunnel(name: string, nodeId?: string): Promise<void>
     let response: TunnelOperationResponse
 
     if (frpMode === 'server' && nodeId) {
-      response = await $fetch(`/api/node/${nodeId}/tunnel/remove`, {
+      response = await $fetch<TunnelOperationResponse>(`/api/node/${nodeId}/tunnel/remove`, {
         method: 'DELETE',
         body: { name }
       })
     }
     else {
-      response = await $fetch('/api/config/tunnel/remove', {
+      response = await $fetch<TunnelOperationResponse>('/api/config/tunnel/remove', {
         method: 'DELETE',
         body: { name }
       })
