@@ -23,11 +23,47 @@
         </AntButton>
       </div>
     </section>
+
+    <section rounded-lg bg-container divide-y>
+      <div flex="~ col gap-3 md:row" p="4" md="items-center justify-between">
+        <div>
+          <p text="base" font="medium">
+            模式切换
+          </p>
+          <p text-sm color-secondary>
+            <template v-if="store.frpMode === 'client'">
+              当前模式：客户端 (frpc)
+            </template>
+            <template v-else>
+              当前模式：服务端 (frps)
+            </template>
+          </p>
+        </div>
+        <AntButton :loading="modeSaving" @click="openModeModal">
+          切换模式
+        </AntButton>
+      </div>
+    </section>
+
+    <AntModal v-model:open="modeModalOpen" title="切换 FRP 模式" :confirm-loading="modeSaving" @ok="handleConfirmMode">
+      <div flex="~ col" gap="3">
+        <p text-sm color-secondary>
+          请选择运行模式：
+        </p>
+        <AntSelect v-model:value="selectedMode" :options="modeOptions" />
+        <p text-xs color-secondary>
+          - 客户端 (frpc)：直接管理当前实例的隧道
+          <br>
+          - 服务端 (frps)：管理接入节点并下发隧道配置
+        </p>
+      </div>
+    </AntModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { FrpMode } from '~/stores/config'
+import { computed, ref } from 'vue'
 import { useConfigStore } from '~/stores/config'
 
 const store = useConfigStore()
@@ -54,7 +90,34 @@ const actionLabel = computed(() => {
   return store.frpPackage.installed ? '检查更新' : '下载最新版本'
 })
 
+const modeOptions = [
+  { label: '客户端 (frpc)', value: 'client' satisfies FrpMode },
+  { label: '服务端 (frps)', value: 'server' satisfies FrpMode }
+]
+
+const modeModalOpen = ref(false)
+const modeSaving = ref(false)
+const selectedMode = ref<FrpMode>(store.frpMode)
+
 async function handleFrpPackage() {
   await store.refreshFrpPackage()
+}
+
+function openModeModal() {
+  selectedMode.value = store.frpMode
+  modeModalOpen.value = true
+}
+
+async function handleConfirmMode() {
+  try {
+    modeSaving.value = true
+    await store.updateFrpMode(selectedMode.value)
+    // 模式切换后，刷新 FRP 配置以匹配最新模式
+    await store.fetchFrpConfig()
+    modeModalOpen.value = false
+  }
+  finally {
+    modeSaving.value = false
+  }
 }
 </script>

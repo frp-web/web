@@ -90,10 +90,11 @@ export const useConfigStore = defineStore('config', () => {
     frpLoading.value = true
     frpError.value = null
     try {
-      const { data } = await useFetch<FrpConfigResponse>('/api/config/frp')
-      frpOriginal.value = data.value?.config ?? ''
+      // Use $fetch to avoid Nuxt useFetch caching returning stale data
+      const data = await $fetch<FrpConfigResponse>('/api/config/frp')
+      frpOriginal.value = data?.config ?? ''
       frpDraft.value = frpOriginal.value
-      frpUpdatedAt.value = data.value?.updatedAt ?? null
+      frpUpdatedAt.value = data?.updatedAt ?? null
     }
     catch (error) {
       frpError.value = extractErrorMessage(error)
@@ -164,6 +165,24 @@ export const useConfigStore = defineStore('config', () => {
     }
   }
 
+  async function updateFrpMode(value: FrpMode) {
+    // 这里复用 frpLoading 以避免新增状态标识
+    if (frpLoading.value) {
+      return
+    }
+    frpLoading.value = true
+    try {
+      const data = await $fetch<{ frpMode: FrpMode }>('/api/config/app', {
+        method: 'PUT',
+        body: { frpMode: value }
+      })
+      frpMode.value = data.frpMode
+    }
+    finally {
+      frpLoading.value = false
+    }
+  }
+
   async function refreshFrpPackage() {
     if (frpPackageLoading.value) {
       return
@@ -223,6 +242,7 @@ export const useConfigStore = defineStore('config', () => {
     setFrpDraft,
     resetFrpDraft,
     updateTheme,
+    updateFrpMode,
     refreshFrpPackage,
     updateAccountDraft,
     saveAccountDraft,

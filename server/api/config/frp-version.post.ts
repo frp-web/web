@@ -57,20 +57,21 @@ export default defineEventHandler(async () => {
           downloadUrl
         })
 
-        // 复制配置文件到配置目录
-        const { appStorage } = await import('~~/src/storages')
-        const mode = appStorage.frpMode || 'server'
-        const configFileName = mode === 'server' ? 'frps.toml' : 'frpc.toml'
-        const sourceConfig = resolve(extractedDir, configFileName)
-        const targetConfig = getConfigPath(mode)
-
+        // 复制两种模式的配置文件到对应目录（同时准备 client/server 两套）
         const { copyFile, access } = await import('node:fs/promises')
         const { constants } = await import('node:fs')
 
-        // 检查源配置文件是否存在
-        try {
-          await access(sourceConfig, constants.F_OK)
-          // 复制配置文件（如果目标文件不存在）
+        async function copyModeConfigIfMissing(mode: 'client' | 'server') {
+          const fileName = mode === 'server' ? 'frps.toml' : 'frpc.toml'
+          const sourceConfig = resolve(extractedDir, fileName)
+          const targetConfig = getConfigPath(mode)
+          try {
+            await access(sourceConfig, constants.F_OK)
+          }
+          catch {
+            console.warn(`Source config file not found: ${sourceConfig}`)
+            return
+          }
           try {
             await access(targetConfig, constants.F_OK)
             console.warn(`Config file already exists: ${targetConfig}`)
@@ -80,9 +81,11 @@ export default defineEventHandler(async () => {
             console.warn(`Copied config file to: ${targetConfig}`)
           }
         }
-        catch {
-          console.warn(`Source config file not found: ${sourceConfig}`)
-        }
+
+        await Promise.all([
+          copyModeConfigIfMissing('client'),
+          copyModeConfigIfMissing('server')
+        ])
 
         // 安装完成后，删除解压目录
         const { rm } = await import('node:fs/promises')
