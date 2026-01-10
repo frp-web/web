@@ -166,17 +166,25 @@ export const useConfigStore = defineStore('config', () => {
   }
 
   async function updateFrpMode(value: FrpMode) {
-    // 这里复用 frpLoading 以避免新增状态标识
     if (frpLoading.value) {
       return
     }
     frpLoading.value = true
     try {
-      const data = await $fetch<{ frpMode: FrpMode }>('/api/config/app', {
-        method: 'PUT',
+      const data = await $fetch<{
+        frpMode: FrpMode
+        wasRunning: boolean
+        stopped: boolean
+      }>('/api/config/switch-mode', {
+        method: 'POST',
         body: { frpMode: value }
       })
       frpMode.value = data.frpMode
+
+      // 如果服务正在运行并且已停止，刷新 FRP 配置
+      if (data.wasRunning && data.stopped) {
+        await fetchFrpConfig()
+      }
     }
     finally {
       frpLoading.value = false

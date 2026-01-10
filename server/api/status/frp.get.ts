@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
     // 发送初始状态事件
     const initialEvent = {
-      type: isRunning ? 'process:started' : 'status',
+      type: 'status',
       running: isRunning,
       timestamp: Date.now(),
       payload: initialPayload

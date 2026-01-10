@@ -37,6 +37,10 @@
             <template v-else>
               当前模式：服务端 (frps)
             </template>
+            <template v-if="frpStore.isRunning">
+              <br>
+              <span text="warning" font="medium">⚠ FRP 服务正在运行中</span>
+            </template>
           </p>
         </div>
         <AntButton :loading="modeSaving" @click="openModeModal">
@@ -56,6 +60,30 @@
           <br>
           - 服务端 (frps)：管理接入节点并下发隧道配置
         </p>
+
+        <!-- 运行状态警告 -->
+        <AntAlert
+          v-if="frpStore.isRunning"
+          type="warning"
+          show-icon
+          message="FRP 服务正在运行"
+        >
+          <template #description>
+            切换模式将自动停止当前运行的 FRP 服务
+          </template>
+        </AntAlert>
+
+        <!-- 模式变化提示 -->
+        <AntAlert
+          v-else-if="selectedMode !== store.frpMode"
+          type="info"
+          show-icon
+          :message="`切换到 ${selectedMode === 'client' ? '客户端' : '服务端'} 模式`"
+        >
+          <template #description>
+            切换后需要重新启动 FRP 服务才能生效
+          </template>
+        </AntAlert>
       </div>
     </AntModal>
   </div>
@@ -65,8 +93,10 @@
 import type { FrpMode } from '~/stores/config'
 import { computed, ref } from 'vue'
 import { useConfigStore } from '~/stores/config'
+import { useFrpStore } from '~/stores/frp'
 
 const store = useConfigStore()
+const frpStore = useFrpStore()
 
 const formatter = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',

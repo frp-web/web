@@ -15,14 +15,29 @@ export interface RawConfigSnapshot {
 }
 
 let bridgeInstance: FrpBridge | null = null
+let currentInstanceMode: RuntimeMode | null = null
 
 // 全局事件总线，用于转发 FRP 事件到 SSE
 export const eventBus = new EventEmitter()
 
 export function useFrpBridge(): FrpBridge {
+  // 获取当前应该使用的模式
+  const targetMode = getMode()
+
+  // 如果 bridge 实例不存在，创建新实例
   if (!bridgeInstance) {
     bridgeInstance = createBridge()
+    currentInstanceMode = targetMode
+    return bridgeInstance
   }
+
+  // 如果模式不匹配，重新创建实例
+  if (currentInstanceMode !== targetMode) {
+    console.warn(`FRP mode changed from ${currentInstanceMode} to ${targetMode}, recreating bridge instance`)
+    bridgeInstance = createBridge()
+    currentInstanceMode = targetMode
+  }
+
   return bridgeInstance
 }
 
