@@ -25,7 +25,8 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     '@unocss/nuxt',
     '@pinia/nuxt',
-    '@nuxtjs/color-mode'
+    '@nuxtjs/color-mode',
+    '@nuxtjs/i18n'
   ],
 
   css: [
@@ -35,6 +36,24 @@ export default defineNuxtConfig({
   colorMode: {
     classSuffix: '',
     preference: 'light'
+  },
+
+  i18n: {
+    locales: [
+      {
+        code: 'zh-CN',
+        name: '简体中文',
+        file: 'zh-CN.json'
+      },
+      {
+        code: 'en-US',
+        name: 'English',
+        file: 'en-US.json'
+      }
+    ],
+    langDir: '../i18n/locales',
+    defaultLocale: 'zh-CN',
+    strategy: 'no_prefix'
   },
 
   imports: {

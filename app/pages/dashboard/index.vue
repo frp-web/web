@@ -2,7 +2,7 @@
   <div>
     <AntRow :gutter="[16, 16]">
       <AntCol :span="24">
-        <AntCard title="FRP 服务状态" :loading="frpStore.loading">
+        <AntCard :title="$t('dashboard.title')" :loading="frpStore.loading">
           <div flex="~ wrap items-center justify-between gap-4">
             <div flex="~ col gap-2">
               <div fyc gap-2>
@@ -17,7 +17,7 @@
                 <span>{{ frpStore.frpStatusText }}</span>
               </div>
               <div v-if="frpStore.isRunning" text="sm [var(--ant-color-text-tertiary)]">
-                运行时间: {{ frpStore.uptimeText }}
+                {{ $t('dashboard.uptime') }}: {{ frpStore.uptimeText }}
               </div>
               <div v-if="frpStore.processInfo?.pid" text="sm [var(--ant-color-text-tertiary)]">
                 PID: {{ frpStore.processInfo.pid }}
@@ -30,7 +30,7 @@
                 :loading="starting"
                 @click="startFrp"
               >
-                启动
+                {{ $t('dashboard.start') }}
               </AntButton>
               <AntButton
                 v-else
@@ -38,14 +38,14 @@
                 :loading="stopping"
                 @click="showStopConfirm"
               >
-                停止
+                {{ $t('dashboard.stop') }}
               </AntButton>
               <AntButton
                 type="default"
                 :loading="restarting"
                 @click="showRestartConfirm"
               >
-                重启
+                {{ $t('dashboard.restart') }}
               </AntButton>
             </div>
           </div>
@@ -56,23 +56,23 @@
     <!-- 停止确认对话框 -->
     <AntModal
       v-model:open="stopConfirmVisible"
-      title="确认停止"
+      :title="$t('dashboard.stopConfirm')"
       :confirm-loading="stopping"
       @ok="stopFrp"
       @cancel="stopConfirmVisible = false"
     >
-      <p>确定要停止 FRP 服务吗？</p>
+      <p>{{ $t('dashboard.stopConfirmMessage') }}</p>
     </AntModal>
 
     <!-- 重启确认对话框 -->
     <AntModal
       v-model:open="restartConfirmVisible"
-      title="确认重启"
+      :title="$t('dashboard.restartConfirm')"
       :confirm-loading="restarting"
       @ok="restartFrp"
       @cancel="restartConfirmVisible = false"
     >
-      <p>确定要重启 FRP 服务吗？</p>
+      <p>{{ $t('dashboard.restartConfirmMessage') }}</p>
     </AntModal>
   </div>
 </template>

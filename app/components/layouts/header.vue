@@ -2,7 +2,7 @@
   <header b="0 b-1 solid" h-12 w-full flex-shrink-0 border-base bg-container>
     <div h-full fbc px-4 color-base>
       <div flex="~ items-center gap-2" text-lg font-thin>
-        <span>FRP Web</span>
+        <span>{{ $t('app.title') }}</span>
         <AntTooltip>
           <template #title>
             <div>
@@ -11,7 +11,7 @@
                 PID: {{ frpStore.processInfo.pid }}
               </div>
               <div v-if="frpStore.isRunning && frpStore.currentUptime > 0">
-                运行时间: {{ frpStore.uptimeText }}
+                {{ $t('dashboard.uptime') }}: {{ frpStore.uptimeText }}
               </div>
             </div>
           </template>
@@ -22,6 +22,7 @@
         </AntTooltip>
       </div>
       <div flex="~ items-center gap-4">
+        <LangSwitch />
         <ThemeToggle />
         <AntDropdown>
           <span cursor-pointer color-secondary transition hover:color-base>
@@ -39,13 +40,13 @@
                   no-underline
                 >
                   <span i-carbon-logo-github />
-                  GitHub
+                  {{ $t('app.github') }}
                 </a>
               </AntMenuItem>
               <AntMenuItem key="logout" @click="handleLogout">
                 <span flex="~ items-center gap-2">
                   <span i-carbon-logout />
-                  退出登录
+                  {{ $t('auth.logout') }}
                 </span>
               </AntMenuItem>
             </AntMenu>

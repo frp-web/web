@@ -10,7 +10,7 @@
         </p>
       </div>
       <AntButton type="primary">
-        添加隧道
+        {{ $t('tunnel.addTunnel') }}
       </AntButton>
     </header>
 
@@ -25,10 +25,10 @@
           <template v-if="column.key === 'actions'">
             <AntSpace>
               <AntButton size="small" @click="handleEdit(record)">
-                编辑
+                {{ $t('tunnel.editTunnel') }}
               </AntButton>
               <AntButton size="small" danger @click="handleDelete(record)">
-                删除
+                {{ $t('tunnel.deleteTunnel') }}
               </AntButton>
             </AntSpace>
           </template>
@@ -46,51 +46,52 @@ interface TunnelManagerProps {
 }
 
 const props = defineProps<TunnelManagerProps>()
+const { t } = useI18n()
 
 const loading = ref(false)
 
 const title = computed(() => {
   if (props.nodeId) {
-    return `隧道管理 - 服务端节点 ${props.nodeId}`
+    return t('node.tunnelManagement', { nodeId: props.nodeId })
   }
-  return '隧道管理'
+  return t('tunnel.title')
 })
 
 const subtitle = computed(() => {
   if (props.nodeId) {
-    return `管理服务端节点 ${props.nodeId} 的隧道配置`
+    return t('node.tunnelManagementDescription', { nodeId: props.nodeId })
   }
-  return '管理客户端隧道配置'
+  return t('tunnel.description')
 })
 
 const columns = [
   {
-    title: '隧道名称',
+    title: t('tunnel.tunnelName'),
     dataIndex: 'name',
     key: 'name'
   },
   {
-    title: '类型',
+    title: t('tunnel.type'),
     dataIndex: 'type',
     key: 'type'
   },
   {
-    title: '本地端口',
+    title: t('tunnel.localPort'),
     dataIndex: 'localPort',
     key: 'localPort'
   },
   {
-    title: '远程端口',
+    title: t('tunnel.remotePort'),
     dataIndex: 'remotePort',
     key: 'remotePort'
   },
   {
-    title: '状态',
+    title: t('common.status'),
     dataIndex: 'status',
     key: 'status'
   },
   {
-    title: '操作',
+    title: t('common.actions'),
     key: 'actions',
     width: 200
   }
@@ -101,12 +102,12 @@ const dataSource = ref<any[]>([])
 function handleEdit(record: any) {
   // TODO: 实现编辑功能
   // eslint-disable-next-line no-console
-  console.log('编辑:', record)
+  console.log('Edit:', record)
 }
 
 function handleDelete(record: any) {
   // TODO: 实现删除功能
   // eslint-disable-next-line no-console
-  console.log('删除:', record)
+  console.log('Delete:', record)
 }
 </script>

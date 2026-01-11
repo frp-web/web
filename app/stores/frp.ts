@@ -32,7 +32,8 @@ export const useFrpStore = defineStore('frp', () => {
 
   // FRP 状态文本
   const frpStatusText = computed(() => {
-    return isRunning.value ? '运行中' : '已停止'
+    const { t } = useI18n()
+    return isRunning.value ? t('frp.status.running') : t('frp.status.stopped')
   })
 
   // FRP 状态徽章状态
@@ -51,6 +52,8 @@ export const useFrpStore = defineStore('frp', () => {
       return ''
     }
 
+    const { t } = useI18n()
+
     // 使用 dayjs 格式化持续时间
     const dur = dayjs.duration(currentUptime.value)
     const days = Math.floor(dur.asDays())
@@ -59,16 +62,16 @@ export const useFrpStore = defineStore('frp', () => {
     const seconds = dur.seconds()
 
     if (days > 0) {
-      return `${days}天 ${hours}小时`
+      return `${days}${t('frp.uptime.days')} ${hours}${t('frp.uptime.hours')}`
     }
     else if (hours > 0) {
-      return `${hours}小时 ${minutes}分钟`
+      return `${hours}${t('frp.uptime.hours')} ${minutes}${t('frp.uptime.minutes')}`
     }
     else if (minutes > 0) {
-      return `${minutes}分钟 ${seconds}秒`
+      return `${minutes}${t('frp.uptime.minutes')} ${seconds}${t('frp.uptime.seconds')}`
     }
     else {
-      return `${seconds}秒`
+      return `${seconds}${t('frp.uptime.seconds')}`
     }
   })
 

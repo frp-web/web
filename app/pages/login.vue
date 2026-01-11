@@ -2,10 +2,10 @@
   <div max-w-md w-full rounded-lg bg-container p-8 shadow-lg>
     <div mb-8 text-center>
       <h1 mb-2 text-2xl color-base font-bold>
-        FRP Web
+        {{ $t('app.title') }}
       </h1>
       <p text-sm color-secondary>
-        {{ isRegisterMode ? '创建管理员账号' : '登录到管理面板' }}
+        {{ isRegisterMode ? $t('auth.registerTitle') : $t('auth.loginTitle') }}
       </p>
     </div>
 
@@ -20,67 +20,67 @@
 
     <AntForm :model="formData" :label-col="{ style: { width: '80px', textAlign: 'right' } }" @finish="handleSubmit">
       <AntFormItem
-        label="用户名"
+        :label="$t('auth.username')"
         name="username"
         :rules="[
-          { required: true, message: '请输入用户名' },
-          { min: 3, max: 20, message: '用户名长度为 3-20 个字符' }
+          { required: true, message: $t('auth.usernameRequired') },
+          { min: 3, max: 20, message: $t('auth.usernameLengthRule') }
         ]"
       >
         <AntInput
           v-model:value="formData.username"
-          placeholder="请输入用户名"
+          :placeholder="$t('auth.usernamePlaceholder')"
           :disabled="authStore.loading"
         />
       </AntFormItem>
 
       <AntFormItem
-        label="密码"
+        :label="$t('auth.password')"
         name="password"
         :rules="[
-          { required: true, message: '请输入密码' },
-          { min: 6, message: '密码长度至少为 6 个字符' }
+          { required: true, message: $t('auth.passwordRequired') },
+          { min: 6, message: $t('auth.passwordLengthRule') }
         ]"
       >
         <AntInputPassword
           v-model:value="formData.password"
-          placeholder="请输入密码"
+          :placeholder="$t('auth.passwordPlaceholder')"
           :disabled="authStore.loading"
         />
       </AntFormItem>
 
       <AntFormItem
         v-if="isRegisterMode"
-        label="确认密码"
+        :label="$t('auth.confirmPassword')"
         name="confirmPassword"
         :rules="[
-          { required: true, message: '请再次输入密码' },
+          { required: true, message: $t('auth.confirmPasswordRequired') },
           { validator: validateConfirmPassword }
         ]"
       >
         <AntInputPassword
           v-model:value="formData.confirmPassword"
-          placeholder="请再次输入密码"
+          :placeholder="$t('auth.confirmPasswordPlaceholder')"
           :disabled="authStore.loading"
         />
       </AntFormItem>
 
       <AntFormItem
         v-if="isRegisterMode"
-        label="运行模式"
+        :label="$t('auth.frpMode')"
         name="frpMode"
-        :rules="[{ required: true, message: '请选择运行模式' }]"
+        :rules="[{ required: true, message: $t('auth.frpModeRequired') }]"
       >
         <AntRadioGroup v-model:value="formData.frpMode" :disabled="authStore.loading">
           <AntRadio value="server">
-            服务端 (frps)
+            {{ $t('auth.serverMode') }}
           </AntRadio>
           <AntRadio value="client">
-            客户端 (frpc)
+            {{ $t('auth.clientMode') }}
           </AntRadio>
         </AntRadioGroup>
         <div mt-2 text-xs color-secondary>
-          服务端：提供公网访问入口；客户端：连接服务端进行内网穿透
+          {{ $t('auth.modeDescription') }}
         </div>
       </AntFormItem>
 
@@ -91,7 +91,7 @@
           w-full
           :loading="authStore.loading"
         >
-          {{ isRegisterMode ? '创建账号' : '登录' }}
+          {{ isRegisterMode ? $t('auth.register') : $t('auth.login') }}
         </AntButton>
       </AntFormItem>
     </AntForm>
@@ -123,9 +123,11 @@ onMounted(async () => {
   isRegisterMode.value = !hasUser
 })
 
+const { t } = useI18n()
+
 function validateConfirmPassword(_rule: Rule, value: string) {
   if (value !== formData.password) {
-    return Promise.reject(new Error('两次输入的密码不一致'))
+    return Promise.reject(new Error(t('auth.passwordMismatch')))
   }
   return Promise.resolve()
 }

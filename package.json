@@ -17,6 +17,7 @@
   "dependencies": {
     "@antv/g2": "^5.4.4",
     "@monaco-editor/loader": "^1.6.1",
+    "@nuxtjs/i18n": "^10.2.1",
     "@types/adm-zip": "^0.5.7",
     "adm-zip": "^0.5.16",
     "ant-design-vue": "^4.2.6",

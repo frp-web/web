@@ -1,0 +1,131 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "submit": "Submit",
+    "back": "Back",
+    "refresh": "Refresh",
+    "status": "Status",
+    "actions": "Actions",
+    "name": "Name",
+    "description": "Description",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "close": "Close",
+    "detail": "Detail"
+  },
+  "app": {
+    "title": "FRP Web",
+    "github": "GitHub"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Create Account",
+    "loginTitle": "Login to Admin Panel",
+    "registerTitle": "Create Admin Account",
+    "username": "Username",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "usernamePlaceholder": "Please enter username",
+    "passwordPlaceholder": "Please enter password",
+    "confirmPasswordPlaceholder": "Please enter password again",
+    "usernameRequired": "Please enter username",
+    "passwordRequired": "Please enter password",
+    "confirmPasswordRequired": "Please enter password again",
+    "usernameLengthRule": "Username length must be 3-20 characters",
+    "passwordLengthRule": "Password length must be at least 6 characters",
+    "passwordMismatch": "The two passwords do not match",
+    "frpMode": "Operating Mode",
+    "frpModeRequired": "Please select operating mode",
+    "serverMode": "Server (frps)",
+    "clientMode": "Client (frpc)",
+    "modeDescription": "Server: Provides public network access entry; Client: Connects to server for intranet penetration"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "tunnel": "Tunnels",
+    "node": "Nodes",
+    "config": "Config"
+  },
+  "dashboard": {
+    "title": "FRP Service Status",
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "stopConfirm": "Confirm Stop",
+    "stopConfirmMessage": "Are you sure you want to stop the FRP service?",
+    "restartConfirm": "Confirm Restart",
+    "restartConfirmMessage": "Are you sure you want to restart the FRP service?",
+    "uptime": "Uptime",
+    "startFailed": "Failed to start FRP",
+    "stopFailed": "Failed to stop FRP",
+    "restartFailed": "Failed to restart FRP"
+  },
+  "config": {
+    "title": "Configuration",
+    "description": "Unified management of FRP configuration and interface parameters",
+    "reload": "Reload",
+    "tabs": {
+      "general": "General",
+      "frp": "FRP Config",
+      "account": "Account"
+    },
+    "general": {
+      "title": "General Settings",
+      "description": "Manage interface and system related settings"
+    },
+    "frp": {
+      "title": "FRP Configuration",
+      "description": "Edit FRP service configuration file"
+    },
+    "account": {
+      "title": "Account Settings",
+      "description": "Manage admin account information"
+    }
+  },
+  "node": {
+    "title": "Node Management",
+    "description": "Manage FRP server nodes",
+    "addNode": "Add Node",
+    "nodeName": "Node Name",
+    "nodeId": "Node ID",
+    "manageTunnel": "Tunnels",
+    "tunnelManagement": "Tunnel Management - Server Node {nodeId}",
+    "tunnelManagementDescription": "Manage tunnel configurations for server node {nodeId}"
+  },
+  "tunnel": {
+    "title": "Tunnel Management",
+    "description": "Manage client tunnel configurations",
+    "addTunnel": "Add Tunnel",
+    "tunnelName": "Tunnel Name",
+    "type": "Type",
+    "localPort": "Local Port",
+    "remotePort": "Remote Port",
+    "editTunnel": "Edit",
+    "deleteTunnel": "Delete"
+  },
+  "frp": {
+    "status": {
+      "running": "Running",
+      "stopped": "Stopped",
+      "unknown": "Unknown"
+    },
+    "uptime": {
+      "days": "days",
+      "hours": "hrs",
+      "minutes": "min",
+      "seconds": "sec"
+    }
+  }
+}

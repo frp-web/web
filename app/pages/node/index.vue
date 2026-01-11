@@ -3,14 +3,14 @@
     <header flex="~ wrap" items-start justify-between gap-4>
       <div>
         <h1 text-2xl color-base font-semibold>
-          节点管理
+          {{ $t('node.title') }}
         </h1>
         <p text-sm color-secondary>
-          管理 FRP 服务端节点
+          {{ $t('node.description') }}
         </p>
       </div>
       <AntButton type="primary">
-        添加节点
+        {{ $t('node.addNode') }}
       </AntButton>
     </header>
 
@@ -25,10 +25,10 @@
           <template v-if="column.key === 'actions'">
             <AntSpace>
               <AntButton size="small" @click="handleDetail(record)">
-                详情
+                {{ $t('common.detail') }}
               </AntButton>
               <AntButton size="small" @click="handleTunnel(record)">
-                隧道管理
+                {{ $t('node.manageTunnel') }}
               </AntButton>
             </AntSpace>
           </template>
@@ -45,26 +45,28 @@ definePageMeta({
   layout: 'default'
 })
 
+const { t } = useI18n()
+
 const loading = ref(false)
 
 const columns = [
   {
-    title: '节点名称',
+    title: t('node.nodeName'),
     dataIndex: 'name',
     key: 'name'
   },
   {
-    title: '节点ID',
+    title: t('node.nodeId'),
     dataIndex: 'id',
     key: 'id'
   },
   {
-    title: '状态',
+    title: t('common.status'),
     dataIndex: 'status',
     key: 'status'
   },
   {
-    title: '操作',
+    title: t('common.actions'),
     key: 'actions',
     width: 200
   }
@@ -75,7 +77,7 @@ const dataSource = ref<any[]>([])
 function handleDetail(record: any) {
   // TODO: 实现详情弹窗
   // eslint-disable-next-line no-console
-  console.log('详情:', record)
+  console.log('Detail:', record)
 }
 
 function handleTunnel(record: any) {

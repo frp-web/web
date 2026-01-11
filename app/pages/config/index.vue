@@ -3,14 +3,14 @@
     <header flex="~ wrap" items-start justify-between gap-4>
       <div>
         <h1 text-2xl color-base font-semibold>
-          配置中心
+          {{ $t('config.title') }}
         </h1>
         <p text-sm color-secondary>
-          统一管理 FRP 配置与界面参数
+          {{ $t('config.description') }}
         </p>
       </div>
       <AntButton :loading="store.frpLoading" @click="handleReload">
-        重新获取
+        {{ $t('config.reload') }}
       </AntButton>
     </header>
 

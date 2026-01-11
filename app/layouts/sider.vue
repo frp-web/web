@@ -3,16 +3,16 @@
     <ClientOnly>
       <NavMenu h-full color-base>
         <NavMenuItem to="/">
-          仪表盘
+          {{ $t('nav.dashboard') }}
         </NavMenuItem>
         <NavMenuItem v-if="frpMode === 'client'" to="/tunnel">
-          隧道管理
+          {{ $t('nav.tunnel') }}
         </NavMenuItem>
         <NavMenuItem v-if="frpMode === 'server'" to="/node">
-          节点管理
+          {{ $t('nav.node') }}
         </NavMenuItem>
         <NavMenuItem to="/config">
-          配置
+          {{ $t('nav.config') }}
         </NavMenuItem>
       </NavMenu>
     </ClientOnly>
