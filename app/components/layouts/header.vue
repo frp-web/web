@@ -6,12 +6,12 @@
         <AntTooltip>
           <template #title>
             <div>
-              <div>{{ frpStore.frpStatusText }}</div>
+              <div>{{ statusText }}</div>
               <div v-if="frpStore.processInfo?.pid">
                 PID: {{ frpStore.processInfo.pid }}
               </div>
               <div v-if="frpStore.isRunning && frpStore.currentUptime > 0">
-                {{ $t('dashboard.uptime') }}: {{ frpStore.uptimeText }}
+                {{ $t('dashboard.uptime') }}: {{ formattedUptime }}
               </div>
             </div>
           </template>
@@ -72,9 +72,20 @@ dayjs.extend(duration)
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const frpStore = useFrpStore()
 const router = useRouter()
+
+// 格式化运行时间
+const formattedUptime = computed(() => {
+  if (!frpStore.isRunning || frpStore.currentUptime <= 0)
+    return ''
+  return dayjs.duration(frpStore.currentUptime).humanize()
+})
+
+// 翻译状态文本
+const statusText = computed(() => t(frpStore.frpStatusText))
 
 async function handleLogout() {
   authStore.logout()

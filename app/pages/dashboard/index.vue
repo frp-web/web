@@ -14,10 +14,10 @@
                   rounded-full
                   transition-colors
                 />
-                <span>{{ frpStore.frpStatusText }}</span>
+                <span>{{ statusText }}</span>
               </div>
               <div v-if="frpStore.isRunning" text="sm [var(--ant-color-text-tertiary)]">
-                {{ $t('dashboard.uptime') }}: {{ frpStore.uptimeText }}
+                {{ $t('dashboard.uptime') }}: {{ formattedUptime }}
               </div>
               <div v-if="frpStore.processInfo?.pid" text="sm [var(--ant-color-text-tertiary)]">
                 PID: {{ frpStore.processInfo.pid }}
@@ -78,6 +78,13 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs'
+import duration from 'dayjs/plugin/duration'
+
+// 配置 Day.js
+dayjs.extend(duration)
+
+const { t } = useI18n()
 const frpStore = useFrpStore()
 const starting = ref(false)
 const stopping = ref(false)
@@ -86,6 +93,16 @@ const restarting = ref(false)
 // 确认对话框状态
 const stopConfirmVisible = ref(false)
 const restartConfirmVisible = ref(false)
+
+// 格式化运行时间
+const formattedUptime = computed(() => {
+  if (!frpStore.isRunning || frpStore.currentUptime <= 0)
+    return ''
+  return dayjs.duration(frpStore.currentUptime).humanize()
+})
+
+// 翻译状态文本
+const statusText = computed(() => t(frpStore.frpStatusText))
 
 // 显示停止确认对话框
 function showStopConfirm() {

@@ -5,9 +5,6 @@ import duration from 'dayjs/plugin/duration'
 dayjs.extend(duration)
 
 export const useFrpStore = defineStore('frp', () => {
-  // i18n
-  const { t } = useI18n()
-
   // FRP 状态相关
   const isRunning = ref(false)
   const loading = ref(true)
@@ -28,7 +25,8 @@ export const useFrpStore = defineStore('frp', () => {
 
   // FRP 状态文本
   const frpStatusText = computed(() => {
-    return isRunning.value ? t('frp.status.running') : t('frp.status.stopped')
+    // 返回 i18n key 而不是翻译后的文本，由组件负责翻译
+    return isRunning.value ? 'frp.status.running' : 'frp.status.stopped'
   })
 
   // FRP 状态徽章状态
@@ -39,33 +37,6 @@ export const useFrpStore = defineStore('frp', () => {
   // FRP 状态指示器颜色类
   const frpStatusIndicatorClass = computed(() => {
     return isRunning.value ? 'bg-success' : 'bg-warning'
-  })
-
-  // 运行时间文本
-  const uptimeText = computed(() => {
-    if (!isRunning.value || currentUptime.value <= 0) {
-      return ''
-    }
-
-    // 使用 dayjs 格式化持续时间
-    const dur = dayjs.duration(currentUptime.value)
-    const days = Math.floor(dur.asDays())
-    const hours = dur.hours()
-    const minutes = dur.minutes()
-    const seconds = dur.seconds()
-
-    if (days > 0) {
-      return `${days}${t('frp.uptime.days')} ${hours}${t('frp.uptime.hours')}`
-    }
-    else if (hours > 0) {
-      return `${hours}${t('frp.uptime.hours')} ${minutes}${t('frp.uptime.minutes')}`
-    }
-    else if (minutes > 0) {
-      return `${minutes}${t('frp.uptime.minutes')} ${seconds}${t('frp.uptime.seconds')}`
-    }
-    else {
-      return `${seconds}${t('frp.uptime.seconds')}`
-    }
   })
 
   // 启动运行时间计时器
@@ -214,7 +185,6 @@ export const useFrpStore = defineStore('frp', () => {
     frpStatusText,
     frpStatusBadgeStatus,
     frpStatusIndicatorClass,
-    uptimeText,
 
     // 方法
     init,
