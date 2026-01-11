@@ -1,142 +1,258 @@
-# 隧道管理功能 - 技术实现文档
+# 隧道管理与代理统计 - 技术实现文档
 
 ## 架构概览
 
-隧道管理分两种模式：
-- **Client 模式**：通过 API 直接控制本地 FRP 客户端的隧道
-- **Server 模式**：通过 WebSocket RPC 远程控制连接的各个 Node（即各个 Client）的隧道
+系统根据运行模式提供两种不同的功能：
+- **Client 模式（FRPC）**：隧道管理，提供完整的 CRUD 功能操作本地 FRP 客户端的隧道
+- **Server 模式（FRPS）**：代理统计，通过 FRPS 内置的 webServer API 获取代理统计信息（只读）
 
-## 数据流设计
+## 模式分离设计
 
-### Client 模式数据流
+### 导航菜单
+侧边栏导航根据 `configStore.frpMode` 自动切换：
+- **Server 模式**：Dashboard → Proxies → Config
+- **Client 模式**：Dashboard → Tunnels → Config
+
+### 页面路由
+- `/tunnel` - Client 模式的隧道管理页面
+- `/proxy` - Server 模式的代理统计页面
+
+## Client 模式 - 隧道管理
+
+### 数据流
 ```
-前端 → API /tunnel/* → Bridge → frpc 进程
+前端 → API /api/config/tunnel → Bridge → frpc 进程
 ```
 
-### Server 模式数据流
-```
-前端 → API /tunnel/* → RPC Server → WebSocket → 远程 Node → frpc 进程
-```
+### 前端层 (Vue 组件)
 
-## 核心实现
+**页面**：
+- `app/pages/tunnel/index.vue` - 隧道管理页面入口
 
-### 1. 前端层 (Vue 组件)
-
-**TunnelManager.vue** 作为通用隧道管理组件，根据 `configStore.frpMode` 配置决定工作模式：
-- `frpMode === 'client'`：Client 模式，操作本地隧道
-- `frpMode === 'server'`：Server 模式，需要通过节点管理界面操作指定 Node 的隧道
+**组件**：
+- `TunnelManager.vue` - 隧道列表和管理组件，提供完整的 CRUD 功能
+- `TunnelFormDrawer.vue` - 隧道创建/编辑表单组件
 
 关键状态管理：
 - 在 `useConfigStore` 中维护隧道列表
 - `frpMode` 来自 `/api/config/app` 响应，由后端配置管理
 
-**已实现组件**：
-- `TunnelManager.vue`：隧道列表和管理
-- `TunnelFormDrawer.vue`：隧道创建/编辑表单
+### API 路由设计
 
-### 2. API 路由设计
-
-**统一 RESTful API**（Client 模式）：
+**统一 RESTful API**：
 - `GET /api/config/tunnel` - 获取隧道列表
 - `POST /api/config/tunnel` - 添加隧道
 - `PUT /api/config/tunnel` - 更新隧道
 - `DELETE /api/config/tunnel` - 删除隧道
 
-**Server 隧道**（基于 RPC，待实现）：
-- `POST /api/node/:nodeId/tunnel` - 通过 RPC 添加
-- `PUT /api/node/:nodeId/tunnel` - 通过 RPC 更新
-- `DELETE /api/node/:nodeId/tunnel` - 通过 RPC 删除
-- `GET /api/node/:nodeId/tunnel` - 通过 RPC 查询
+### 后端实现
 
-### 3. 后端实现策略
-
-**Client 模式**：直接调用 `bridge.execute()` 操作隧道
+直接调用 `bridge.execute()` 操作隧道：
 ```typescript
 // server/api/config/tunnel.post.ts
 await bridge.execute({ name: 'proxy.add', payload: { proxy: tunnelConfig } })
 ```
 
-**Server 模式**：通过 RPC Server 转发请求
-```typescript
-// server/api/node/[nodeId]/tunnel.post.ts (待实现)
-await bridge.execute({
-  name: 'proxy.add',
-  payload: { proxy: tunnelConfig, nodeId }
-})
-// 内部会调用 rpcServer.rpcCall(nodeId, 'proxy.add', { proxy: tunnelConfig })
+### 已完成功能
+- ✅ 完整的 CRUD 功能
+- ✅ RESTful API 设计
+- ✅ remotePort 冲突检测（本地）
+- ✅ 隧道表单组件
+- ✅ 多类型代理支持（TCP/UDP/HTTP/HTTPS/STCP/XTCP）
+
+## Server 模式 - 代理统计
+
+### 数据流
+```
+前端 → API /api/proxy/[type] → FRPS webServer API → 统计数据
 ```
 
-### 4. WebSocket RPC 机制
+### 前端层 (Vue 组件)
 
-Server 端维护 Client 连接池，每个 Node 对应一个 WebSocket。接收到隧道操作请求时：
+**页面**：
+- `app/pages/proxy/index.vue` - 代理统计页面，按类型展示
 
-1. Server 生成唯一 RPC ID
-2. 发送 RPC 请求到对应 Node 的 WebSocket
-3. Node 执行隧道操作，返回结果
-4. Server 等待响应（默认 30s 超时）
-5. 返回结果给前端
+**组件**：
+- `ProxyTable.vue` - 代理表格组件，展示统计信息
 
-**关键协议**：
-- 请求：`{ id, method: 'tunnel.add|update|remove', params, timeout }`
-- 响应：`{ id, status: 'success|error', result, error }`
+**功能特性**：
+- 按 Tabs 切换代理类型（TCP/UDP/HTTP/HTTPS/STCP/XTCP）
+- 展示代理统计信息：连接数、入站/出站流量、状态等
+- 只读展示，不提供编辑功能
+- 手动刷新功能
 
-### 5. 状态同步
+### API 路由设计
 
-**实时更新隧道列表**：
-- Client 模式：SSE 推送隧道状态变化
-- Server 模式：RPC 回调通知各 Node 状态变化（或定期轮询）
+**动态路由**：
+- `GET /api/proxy/[type]` - 按类型获取代理统计信息
+
+支持类型：`tcp`, `udp`, `http`, `https`, `stcp`, `xtcp`
+
+### 后端实现
+
+#### 工具函数：`server/utils/frps-api.ts`
+
+核心函数：
+- `getFrpsApiConfig()` - 从 frps.toml 读取 webServer 配置
+  - 读取配置文件
+  - 解析 TOML
+  - 提取 webServer.addr、webServer.port、webServer.user、webServer.password
+
+- `callFrpsApi<T>()` - 通用 API 调用函数
+  - 处理 Basic Auth 认证
+  - 发送 HTTP 请求到 FRPS webServer
+  - 统一错误处理
+
+- `getFrpsProxiesWithStats()` - 获取所有类型代理的统计信息
+  - 并行调用所有类型的 API 端点
+  - 统一格式化数据
+  - 返回合并后的代理列表
+
+#### API 端点：`server/api/proxy/[type].get.ts`
+
+实现步骤：
+1. 验证运行模式（必须是 server 模式）
+2. 从路由参数获取代理类型
+3. 验证类型是否有效（tcp/udp/http/https/stcp/xtcp）
+4. 读取配置文件获取 webServer 配置
+5. 构造 Basic Auth 认证头
+6. 调用 FRPS API：`http://${addr}:${port}/api/proxy/${type}`
+7. 解析响应并格式化数据
+8. 返回统一格式的响应
+
+### FRPS API 响应格式
+
+```json
+{
+  "proxies": [
+    {
+      "name": "test-tcp",
+      "conf": {
+        "name": "test-tcp",
+        "type": "tcp",
+        "localIP": "127.0.0.1",
+        "localPort": 22,
+        "remotePort": 6000
+      },
+      "curConns": 1,
+      "todayTrafficIn": 1024,
+      "todayTrafficOut": 2048,
+      "status": "online",
+      "clientVersion": "0.60.0",
+      "lastStartTime": "2026-01-11 10:00:00",
+      "lastCloseTime": ""
+    }
+  ]
+}
+```
+
+### 格式化后的数据结构
+
+```typescript
+interface ProxyItem {
+  name: string
+  type: string
+  remotePort: number
+  localPort: number
+  localIP: string
+  conns: number
+  trafficIn: number
+  trafficOut: number
+  status: string
+  clientVersion: string
+  lastStartTime: string
+  lastCloseTime: string
+  conf: any
+}
+```
+
+### webServer 配置
+
+系统会在以下场景自动添加 webServer 配置到 frps.toml：
+1. 下载 FRP 后首次启动
+2. 从 FRP 包复制默认配置文件时
+
+配置内容：
+```toml
+# webServer 配置 - 用于获取 FRPS 连接数据
+webServer.addr = "127.0.0.1"
+webServer.port = 7500
+webServer.user = "admin"
+webServer.password = "admin"
+```
+
+### 已完成功能
+- ✅ FRPS webServer API 集成
+- ✅ 按类型展示代理统计
+- ✅ 代理表格组件
+- ✅ 类型切换 Tabs
+- ✅ 手动刷新功能
+- ✅ webServer 自动配置
 
 ## 错误处理
 
-1. **Node 离线**：RPC 请求立即失败，前端显示"节点离线"
-2. **RPC 超时**：30s 无响应，返回超时错误
-3. **执行失败**：Node 返回 error 状态，展示错误信息
+### Client 模式
+1. **配置文件不存在**：提示用户检查配置
+2. **端口冲突**：添加隧道时检测 remotePort 冲突
+3. **FRP 进程异常**：展示错误信息，指导用户重启或检查配置
 
-## 权限控制
+### Server 模式
+1. **配置文件不存在**：返回错误，提示检查 frps.toml
+2. **webServer 配置缺失**：返回错误，提示添加 webServer 配置
+3. **FRPS API 调用失败**：返回错误信息（如 404、认证失败等）
+4. **FRPS 未启动**：API 调用超时，提示用户启动 FRPS
 
-- Client 模式：验证当前用户权限
-- Server 模式：验证用户对指定 Node 的操作权限（从数据库或配置获取）
+## 国际化
 
-## 存储与配置
-
-- **frpMode 配置**：在 `appStorage` 中存储，由后端管理，通过 `/api/config/app` 暴露给前端
-  - `'client'`：客户端模式
-  - `'server'`：服务端模式
-- **Client 隧道配置**：保存在本地 FRP 配置文件中
-- **Server 节点信息**：存储节点列表及其授权用户
-- **连接状态**：维护内存 Map 记录活跃 WebSocket 连接
-
-## 模式切换流程
-
-1. 后端管理员修改 `appStorage.frpMode`
-2. 前端调用 `/api/config/app` 获取最新 `frpMode`
-3. `configStore` 响应式更新，页面导航和组件行为自动调整
-4. 隧道操作 API 路由根据 `frpMode` 动态选择（Client 或 Server）
+相关翻译键：
+```json
+{
+  "nav": {
+    "proxy": "代理管理",
+    "tunnel": "隧道管理"
+  },
+  "tunnel": {
+    "title": "隧道管理",
+    "totalProxies": "共 {count} 个代理",
+    "status": {
+      "online": "在线",
+      "offline": "离线"
+    }
+  }
+}
+```
 
 ## 关键文件映射
 
 | 功能 | 文件位置 |
 |------|---------|
-| 通用隧道组件 | `app/components/tunnel/TunnelManager.vue` |
+| 隧道管理页面 | `app/pages/tunnel/index.vue` |
+| 代理统计页面 | `app/pages/proxy/index.vue` |
+| 隧道管理组件 | `app/components/tunnel/TunnelManager.vue` |
 | 隧道表单组件 | `app/components/tunnel/TunnelFormDrawer.vue` |
+| 代理表格组件 | `app/components/proxy/ProxyTable.vue` |
 | 状态管理 | `app/stores/config.ts` |
 | Client 隧道 API | `server/api/config/tunnel.*.ts` |
-| Server 隧道 API | `server/api/node/[nodeId]/tunnel.*.ts` (待实现) |
-| RPC 服务 | `frp-bridge/packages/core/src/rpc/rpc-server.ts` |
+| Server 代理 API | `server/api/proxy/[type].get.ts` |
+| FRPS API 工具 | `server/utils/frps-api.ts` |
+| 侧边栏导航 | `app/layouts/sider.vue` |
 | 隧道配置类型 | `@frp-bridge/types` (ProxyConfig) |
-
-## 已完成功能
-
-- ✅ Client 模式隧道 CRUD
-- ✅ RESTful API 设计
-- ✅ remotePort 冲突检测（本地）
-- ✅ 隧道表单组件
-- ✅ **服务端隧道冲突检测**（全局）
-- ✅ **RPC 隧道管理命令**
 
 ## 待实现功能
 
-- ⏳ Server 模式隧道管理 UI
-- ⏳ 节点隧道同步机制
-- ⏳ 隧道状态实时显示（SSE）
-- ⏳ 隧道操作审计日志
+### 通用
+- [ ] 配置备份与恢复功能
+- [ ] 隧道操作审计日志
+- [ ] 实时状态监控（SSE/WebSocket）
+- [ ] 隧道/代理搜索功能
+
+### Client 模式
+- [ ] 隧道模板功能
+- [ ] 批量导入/导出隧道配置
+- [ ] 隧道启用/禁用功能
+
+### Server 模式
+- [ ] 代理详情查看
+- [ ] 流量图表展示
+- [ ] 客户端信息展示
+- [ ] 历史统计数据
