@@ -81,7 +81,25 @@ const router = useRouter()
 const formattedUptime = computed(() => {
   if (!frpStore.isRunning || frpStore.currentUptime <= 0)
     return ''
-  return dayjs.duration(frpStore.currentUptime).humanize()
+
+  const duration = dayjs.duration(frpStore.currentUptime)
+  const parts: string[] = []
+
+  const days = duration.days()
+  const hours = duration.hours()
+  const minutes = duration.minutes()
+  const seconds = duration.seconds()
+
+  if (days > 0)
+    parts.push(`${days}${t('common.day')}`)
+  if (hours > 0)
+    parts.push(`${hours}${t('common.hour')}`)
+  if (minutes > 0)
+    parts.push(`${minutes}${t('common.minute')}`)
+  if (seconds > 0 || parts.length === 0)
+    parts.push(`${seconds}${t('common.second')}`)
+
+  return parts.join(' ')
 })
 
 // 翻译状态文本
