@@ -24,39 +24,46 @@
 
 **TunnelManager.vue** 作为通用隧道管理组件，根据 `configStore.frpMode` 配置决定工作模式：
 - `frpMode === 'client'`：Client 模式，操作本地隧道
-- `frpMode === 'server'`：Server 模式，需传入 `nodeId` 参数操作指定 Node 的隧道
+- `frpMode === 'server'`：Server 模式，需要通过节点管理界面操作指定 Node 的隧道
 
 关键状态管理：
-- 在 `useFrpStore` 中维护隧道列表 (`tunnels`)
-- Server 模式下按 `nodeId` 维护多个隧道集合
+- 在 `useConfigStore` 中维护隧道列表
 - `frpMode` 来自 `/api/config/app` 响应，由后端配置管理
+
+**已实现组件**：
+- `TunnelManager.vue`：隧道列表和管理
+- `TunnelFormDrawer.vue`：隧道创建/编辑表单
 
 ### 2. API 路由设计
 
-**Client 隧道**：
-- `POST /api/config/tunnel.add` - 添加
-- `PUT /api/config/tunnel.update` - 更新
-- `DELETE /api/config/tunnel.remove` - 删除
-- `GET /api/config/tunnel.list` - 列表
+**统一 RESTful API**（Client 模式）：
+- `GET /api/config/tunnel` - 获取隧道列表
+- `POST /api/config/tunnel` - 添加隧道
+- `PUT /api/config/tunnel` - 更新隧道
+- `DELETE /api/config/tunnel` - 删除隧道
 
-**Server 隧道**（基于 RPC）：
-- `POST /api/node/:id/tunnel.add`
-- `PUT /api/node/:id/tunnel.update`
-- `DELETE /api/node/:id/tunnel.remove`
-- `GET /api/node/:id/tunnel.list`
+**Server 隧道**（基于 RPC，待实现）：
+- `POST /api/node/:nodeId/tunnel` - 通过 RPC 添加
+- `PUT /api/node/:nodeId/tunnel` - 通过 RPC 更新
+- `DELETE /api/node/:nodeId/tunnel` - 通过 RPC 删除
+- `GET /api/node/:nodeId/tunnel` - 通过 RPC 查询
 
 ### 3. 后端实现策略
 
 **Client 模式**：直接调用 `bridge.execute()` 操作隧道
 ```typescript
-// server/api/config/tunnel.add.ts
-bridge.execute({ name: 'proxy.add', payload: config })
+// server/api/config/tunnel.post.ts
+await bridge.execute({ name: 'proxy.add', payload: { proxy: tunnelConfig } })
 ```
 
 **Server 模式**：通过 RPC Server 转发请求
 ```typescript
-// server/api/node/[id]/tunnel.add.ts
-rpcServer.rpcCall(nodeId, 'tunnel.add', payload)
+// server/api/node/[nodeId]/tunnel.post.ts (待实现)
+await bridge.execute({
+  name: 'proxy.add',
+  payload: { proxy: tunnelConfig, nodeId }
+})
+// 内部会调用 rpcServer.rpcCall(nodeId, 'proxy.add', { proxy: tunnelConfig })
 ```
 
 ### 4. WebSocket RPC 机制
@@ -111,9 +118,25 @@ Server 端维护 Client 连接池，每个 Node 对应一个 WebSocket。接收�
 | 功能 | 文件位置 |
 |------|---------|
 | 通用隧道组件 | `app/components/tunnel/TunnelManager.vue` |
-| 前端 API 调用 | `app/utils/tunnel-api.ts` (待创建) |
-| 状态管理 | `app/stores/frp.ts` |
-| Client 隧道 API | `server/api/config/tunnel.*` (待创建) |
-| Server 隧道 API | `server/api/node/[id]/tunnel.*` (待创建) |
-| RPC 服务 | `server/bridge/rpc-server.ts` (from frp-bridge) |
-| 隧道配置类型 | `server/types/tunnel.ts` (待创建) |
+| 隧道表单组件 | `app/components/tunnel/TunnelFormDrawer.vue` |
+| 状态管理 | `app/stores/config.ts` |
+| Client 隧道 API | `server/api/config/tunnel.*.ts` |
+| Server 隧道 API | `server/api/node/[nodeId]/tunnel.*.ts` (待实现) |
+| RPC 服务 | `frp-bridge/packages/core/src/rpc/rpc-server.ts` |
+| 隧道配置类型 | `@frp-bridge/types` (ProxyConfig) |
+
+## 已完成功能
+
+- ✅ Client 模式隧道 CRUD
+- ✅ RESTful API 设计
+- ✅ remotePort 冲突检测（本地）
+- ✅ 隧道表单组件
+- ✅ **服务端隧道冲突检测**（全局）
+- ✅ **RPC 隧道管理命令**
+
+## 待实现功能
+
+- ⏳ Server 模式隧道管理 UI
+- ⏳ 节点隧道同步机制
+- ⏳ 隧道状态实时显示（SSE）
+- ⏳ 隧道操作审计日志

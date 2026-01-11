@@ -21,17 +21,19 @@
 
 | 包 | 职责摘要 |
 | --- | --- |
-| **`@frp-bridge/core`** | 提供 `FrpBridge` 类：下载/更新 FRP 可执行文件、读取/合并配置、启动/停止进程、节点与隧道（Proxy）增删改查、备份恢复。封装所有文件与子进程操作。 |
+| **`@frp-bridge/core`** | 提供 `FrpBridge` 类：下载/更新 FRP 可执行文件、读取/合并配置、启动/停止进程、**节点与隧道（Proxy）增删改查**、**全局隧道注册表**、**RPC 隧道管理**、备份恢复。封装所有文件与子进程操作。 |
+| **`@frp-bridge/types`** | 汇集 `client.ts`、`server.ts`、`common.ts`、`proxy.ts`、**`node.ts`** 中的 TS 类型，完全对应 FRP 官方配置文档，方便静态校验。 |
+| **`@frp-bridge/shared`** | 存放 CLI/核心共用的 loading、日志等小工具。 |
 | **`frpx` CLI** | 基于 `cac` 暴露 download/start/stop/backup 等子命令，是 `FrpBridge` 的命令行入口，可用于调试或与后端运维脚本集成。 |
 | **`frp-bridge`（聚合包）** | 对外统一导出 `FrpBridge` 与类型，屏蔽内部包结构。推荐应用依赖它而非单独拼装多个子包。 |
-| **`@frp-bridge/types`** | 汇集 `client.ts`、`server.ts`、`common.ts`、`proxy.ts` 中的 TS 类型，完全对应 FRP 官方配置文档，方便静态校验。 |
-| **`@frp-bridge/shared`** | 存放 CLI/核心共用的 loading、日志等小工具。 |
 
 `FrpBridge` 关键 API（供服务端封装或未来 server routes 调用）：
 - `downloadFrpBinary` / `updateFrpBinary`：确保指定版本/平台的二进制存在。
 - `start(options)` / `stop()` / `isRunning()`：管理 frpc/frps 生命周期。
 - `getConfig()` / `updateConfig(partial)` / `backupConfig()`：读取、增量写入、备份 TOML/INI 配置。
-- `addNode/updateNode/removeNode`、`addTunnel/updateTunnel/removeTunnel`：以“节点 + 隧道”抽象组织配置，便于 UI 管理。
+- **`getProcessManager()`**：获取进程管理器，执行隧道操作。
+- **`getNodeManager()`**：服务端模式下获取节点管理器，**管理全局隧道注册表**。
+- `execute()` / `query()`：执行命令和查询（支持运行时命令/查询）。
 
 ## 3. 当前 `frp-web` 项目概况
 
@@ -41,37 +43,51 @@
 - **状态与工具**：`pinia@3`、`@vueuse/nuxt`。
 - **样式系统**：`@unocss/nuxt` + `uno.config.ts` 自定义断点/shortcuts，Icon 走 `presetIcons` + `cdn: https://esm.sh/`，无需本地 `@iconify/json`。
 - **主题/暗色**：`@nuxtjs/color-mode`，默认 Light。
+- **国际化**：`@nuxtjs/i18n` 支持中英文切换。
 
 ### 3.2 目录速览
 ```
 app/
   app.vue            # 根组件，挂载 Ant ConfigProvider + NuxtLayout
   layouts/           # default/header/footer/main/sider 组成多区域布局
-  pages/             # 页面路由（当前 demo 为 index）
-  components/        # UI 片段（如 layouts/header）
-  utils/             # 复用工具（如 ColorMode 枚举）
-  stores/            # Pinia store（config 等）
+  pages/             # 页面路由（dashboard、config、node 等）
+  components/        # UI 片段（tunnel/TunnelManager.vue、node/NodeDetailDrawer.vue 等）
+  utils/             # 复用工具
+  stores/            # Pinia store（config、frp 等）
 public/              # 静态资源
-server/              # Nuxt server routes（可用于封装 frp-bridge）
+server/              # Nuxt server routes（封装 frp-bridge）
+  api/
+    config/          # 配置相关 API
+    node/            # 节点管理 API
+    bridge/          # FrpBridge 初始化
 src/
   storages/          # 文件型配置（AppStorage、FrpPackageStorage 等）
 uno.config.ts        # UnoCSS 配置
 nuxt.config.ts       # 模块、Vite 插件、head、imports 等
+i18n/                # 国际化文件
 ```
 - 所有新代码必须放在 `app/` 命名空间下，以匹配 Nuxt 4 自动导入、文件路由与布局机制。
 - 组件/模块默认 TypeScript，遵守 `.github/copilot/development-guidelines.md`（性能优先、注释最少但必要、保持类型安全）。
 
 ### 3.3 UI 目标
 - 构建一个 **FRP 管理后台**：可视化管理服务端节点、客户端代理、实时状态、日志与配置。
-- 布局：头部容纳导航/品牌，侧边栏列出功能区（节点、隧道、监控、设置等），主区域显示数据卡片/表格/表单。
+- 布局：头部容纳导航/品牌，侧边栏列出功能区（Dashboard、节点、隧道、配置等），主区域显示数据卡片/表格/表单。
 - 交互：大量使用 Ant Design Vue 组件（Table/Form/Drawer/Result）+ UnoCSS 原子类。
 
-### 3.4 当前进展（2025-11-16）
-- `/config` 页面已上线：页头+三段 Tabs，`FrpEditor` 基于 Monaco 编辑 FRP 文本。
-- `useConfigStore` 管理 FRP 文本、主题、FRP 包信息、帐号占位数据；所有 tab 共享该 store。
-- 服务端暴露 `/api/config/frp`（GET/PUT）、`/api/config/app`（GET/PUT）与 `/api/config/frp-version`（POST）；均通过 `useFrpBridge` 与本地 `appStorage`/`frpPackageStorage` 协调数据。
-- `src/storages` 提供 `BaseStorage` + `useStorage`，将主题、FRP 包元数据等落盘到 `.frp-web/storages`，接口层直接读写。
-- 待办集中在常规设置拓展、帐号持久化与更多通知/验证流程。
+### 3.4 当前进展（2026-01-11）
+
+**已实现功能**：
+- `/config` 页面：FRP 配置编辑器（Monaco）、常规设置（主题、FRP 版本、模式切换）、帐号管理。
+- `/node` 页面：节点列表、详情查看、节点统计。
+- 隧道管理：完整的 CRUD 功能（`TunnelManager.vue`、`TunnelFormDrawer.vue`）。
+- RESTful API 设计：`/api/config/tunnel` 统一接口（GET/POST/PUT/DELETE）。
+- **i18n 国际化**：支持中英文切换。
+- **服务端节点管理**：自动注册、心跳检测、状态跟踪。
+- **服务端隧道冲突检测**：全局隧道注册表、跨节点端口冲突检测。
+- **RPC 隧道管理**：服务端通过 RPC 远程管理客户端节点隧道。
+
+**待办事项**：
+参见 `ai-docs/todo/pending-features.md` 了解完整的功能规划。
 
 ## 4. AI 开发工作流建议
 
@@ -98,15 +114,15 @@ pnpm dev -- --host
 - **布局组件复用**：`app/layouts/*.vue` 包含顶部/侧边/内容槽位，新增页面应尽量通过 slot 插入，而非复制结构。
 - **样式约定**：优先用 UnoCSS 原子类 + shortcuts；仅在必要时编写 SCSS；配合 Ant Design 的 token 自定义品牌色。
 - **异步调用**：统一封装在 `app/composables/`（例如 `useFrpBridge()`）中，处理 loading/error/toast，页面仅关注数据展示。
-- **国际化**：当前项目为中文语境，保持 copywriting 一致；若需多语言，可引入 Nuxt i18n 模块。
+- **国际化**：使用 `$t('key')` 进行文本国际化，新增文本需在 `i18n/locales/` 中添加中英文翻译。
 
 ### 4.4 常见任务清单
 | 任务 | 关键文件/目录 | 注意事项 |
 | --- | --- | --- |
-| 新增 FRP 节点管理页 | `app/pages/nodes.vue`, `app/stores/nodes.ts`, `server/api/nodes/*.ts` | 使用 `FrpBridge.addNode/updateNode/removeNode`；表单字段基于 `ServerConfig`/`ClientConfig`。 |
-| 隧道（Proxy）列表 | `app/pages/tunnels.vue` | 支持多类型代理，前端字段可引用 `@frp-bridge/types` 的 discriminated union 渲染。 |
-| 配置备份/恢复 | `server/api/config/backup.ts`, `app/components/config/BackupDrawer.vue` | 调用 `FrpBridge.backupConfig()` 并提供下载链接；恢复时谨慎覆盖。 |
-| 运行状态监控 | `app/components/dashboard/StatusCards.vue` | 展示 `isRunning`、当前版本、活跃代理数、Prometheus URL 等。 |
+| 节点管理页 | `app/pages/node/index.vue`, `app/components/node/`, `server/api/node/*.ts` | 节点自动注册，无需手动添加；支持断开/重启/日志查看等操作。 |
+| 隧道管理 | `app/components/tunnel/TunnelManager.vue`, `server/api/config/tunnel.*.ts` | RESTful API 设计；remotePort 冲突检测；支持多类型代理。 |
+| 配置备份/恢复 | `server/api/config/backup.ts`, `app/components/config/BackupManager.vue` | 调用 `FrpBridge.backupConfig()` 并提供下载链接；恢复时谨慎覆盖。 |
+| 运行状态监控 | `app/pages/dashboard/index.vue`, `server/api/stats.ts` | 展示节点统计、隧道状态、流量等信息。 |
 
 ## 5. 约束与最佳实践
 - **性能与安全**：所有后端交互都在服务端 `server/` 目录内完成，前端只通过 `$fetch`。不要在浏览器中直接操作文件系统或执行 CLI。
@@ -124,14 +140,18 @@ pnpm dev -- --host
 - **基础配置**：引导页需覆盖访问账号、FRP API 开启、服务端监听端口、客户端 serverAddr/serverPort 等关键字段，依据 `@frp-bridge/types` 构建必填项校验。
 
 ### 6.2 节点管理
-- **节点列表**：页面需展示节点名称、类型、端口、连接数、上下行流量、版本号、连接状态等字段；数据由 server routes 聚合 `FrpBridge` 与 FRP API 统计所得。
-- **节点增删改**：提供 Drawer/Form 组合，支持添加、编辑、删除节点；操作后调用 `addNode/updateNode/removeNode` 并触发配置刷新，确保残留配置被清理。
-- **批量/SLA**：为后期扩展预留批量禁用、状态批量刷新接口，以便履行“安全隐患节点快速下线”的需求。
+- **节点列表**：页面展示节点名称、IP、端口、连接状态、版本号等字段；数据由 server routes 聚合 `FrpBridge.getNodeManager()` 统计所得。
+- **节点详情**：Drawer 组件展示节点详细信息（操作系统、硬件、隧道列表等）。
+- **节点操作**：支持断开连接、重启节点、查看日志、编辑元数据（备注、标签）。
+- **状态同步**：使用 SSE 推送节点在线/离线状态变化。
+- **架构说明**：节点由 frpc 客户端连接时自动注册，无需手动添加。
 
 ### 6.3 隧道（Proxy）管理
 - **创建与模板**：根据代理类型（TCP/UDP/HTTP/HTTPS/STCP/XTCP/TCPMUX/SUDP）动态渲染字段，提供常用端口预设（22/80/443 等）以减少表单输入。
-- **查询与统计**：支持按名称、状态、所属节点等条件过滤；仪表卡片展示流量、连接数、近期失败次数，必要时接入可选的图表库（如 `@antv/g2`）。
-- **修改与删除**：与节点操作相同，保证 `FrpBridge` 配置与 UI 状态一致，并在删除时同步清理 Visitor/Proxy 配置段。
+- **查询与统计**：支持按名称、状态、所属节点等条件过滤；仪表卡片展示流量、连接数、近期失败次数，必要时接入可选的图表库（如 `@antv/g2plot`）。
+- **修改与删除**：保证 `FrpBridge` 配置与 UI 状态一致，并在删除时同步清理 Visitor/Proxy 配置段。
+- **remotePort 验证**：本地检查端口冲突；服务端模式下进行全局冲突检测。
+- **RPC 隧道管理**：服务端通过 RPC 远程管理客户端节点隧道。
 
 ### 6.4 日志与监控
 - **操作/系统日志**：落盘并展示用户操作、FRP 事件、异常信息，可结合 `FrpBridge` 日志输出或 `execa` stdout/stderr，同时提供下载能力。
