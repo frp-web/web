@@ -16,6 +16,7 @@ export interface RawConfigSnapshot {
 
 let bridgeInstance: FrpBridge | null = null
 let currentInstanceMode: RuntimeMode | null = null
+let initializingPromise: Promise<void> | null = null
 
 // 全局事件总线，用于转发 FRP 事件到 SSE
 export const eventBus = new EventEmitter()
@@ -28,14 +29,41 @@ export function useFrpBridge(): FrpBridge {
   if (!bridgeInstance) {
     bridgeInstance = createBridge()
     currentInstanceMode = targetMode
+
+    // 异步初始化，不阻塞
+    if (!initializingPromise) {
+      initializingPromise = bridgeInstance.initialize().then(() => {
+        console.warn('[Bridge] Initialization completed')
+      }).catch((error) => {
+        console.error('[Bridge] Initialization failed:', error)
+      }).finally(() => {
+        initializingPromise = null
+      })
+    }
+
     return bridgeInstance
   }
 
   // 如果模式不匹配，重新创建实例
   if (currentInstanceMode !== targetMode) {
     console.warn(`FRP mode changed from ${currentInstanceMode} to ${targetMode}, recreating bridge instance`)
+    // 清理旧实例（异步）
+    if (bridgeInstance) {
+      bridgeInstance.dispose().catch((error) => {
+        console.error('[Bridge] Dispose failed:', error)
+      })
+    }
     bridgeInstance = createBridge()
     currentInstanceMode = targetMode
+
+    // 异步初始化
+    initializingPromise = bridgeInstance.initialize().then(() => {
+      console.warn('[Bridge] Initialization completed')
+    }).catch((error) => {
+      console.error('[Bridge] Initialization failed:', error)
+    }).finally(() => {
+      initializingPromise = null
+    })
   }
 
   return bridgeInstance
@@ -56,7 +84,8 @@ export async function readConfigFileText(): Promise<RawConfigSnapshot> {
   }
 
   const text = readFileSync(configPath, 'utf-8')
-  const state = useFrpBridge().snapshot()
+  const bridge = useFrpBridge()
+  const state = bridge.snapshot()
 
   return {
     text,
@@ -86,6 +115,7 @@ function createBridge(): FrpBridge {
   const workDir = resolveWorkDir()
 
   // 创建 bridge 实例，注册自定义命令和事件监听
+
   const bridge = new FrpBridge({
     mode,
     workDir,
@@ -167,6 +197,26 @@ async function copyDefaultConfigIfExists(): Promise<boolean> {
         if (existsSync(sourceConfigPath)) {
           copyFileSync(sourceConfigPath, targetConfigPath)
           console.warn(`Copied default config from ${sourceConfigPath} to ${targetConfigPath}`)
+
+          // 如果是 server 模式，添加 webServer 配置
+          if (mode === 'server') {
+            const { appendFileSync, readFileSync } = await import('node:fs')
+            try {
+              const configContent = readFileSync(targetConfigPath, 'utf-8')
+
+              // 检查是否已存在 webServer 配置
+              if (!configContent.includes('webServer.addr')) {
+                // 添加 webServer 配置
+                const webServerConfig = '\n# webServer 配置 - 用于获取 FRPS 连接数据\nwebServer.addr = "127.0.0.1"\nwebServer.port = 7500\nwebServer.user = "admin"\nwebServer.password = "admin"\n'
+                appendFileSync(targetConfigPath, webServerConfig)
+                console.warn(`Added webServer config to: ${targetConfigPath}`)
+              }
+            }
+            catch (error) {
+              console.error('Failed to add webServer config:', error)
+            }
+          }
+
           return true
         }
       }

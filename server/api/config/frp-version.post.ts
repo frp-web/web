@@ -79,6 +79,25 @@ export default defineEventHandler(async () => {
           catch {
             await copyFile(sourceConfig, targetConfig)
             console.warn(`Copied config file to: ${targetConfig}`)
+
+            // 如果是 server 模式，添加 webServer 配置
+            if (mode === 'server') {
+              const { readFile, appendFile } = await import('node:fs/promises')
+              try {
+                const configContent = await readFile(targetConfig, 'utf-8')
+
+                // 检查是否已存在 webServer 配置
+                if (!configContent.includes('webServer.addr')) {
+                  // 添加 webServer 配置
+                  const webServerConfig = '\n# webServer 配置 - 用于获取 FRPS 连接数据\nwebServer.addr = "127.0.0.1"\nwebServer.port = 7500\nwebServer.user = "admin"\nwebServer.password = "admin"\n'
+                  await appendFile(targetConfig, webServerConfig)
+                  console.warn(`Added webServer config to: ${targetConfig}`)
+                }
+              }
+              catch (error) {
+                console.error('Failed to add webServer config:', error)
+              }
+            }
           }
         }
 

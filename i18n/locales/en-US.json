@@ -59,8 +59,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "tunnel": "Tunnels",
-    "node": "Nodes",
-    "nodeManagement": "Node List",
+    "proxy": "Proxies",
     "config": "Config"
   },
   "dashboard": {
@@ -99,50 +98,17 @@
       "description": "Manage admin account information"
     }
   },
-  "node": {
-    "title": "Node Management",
-    "description": "Manage FRP server nodes",
-    "addNode": "Add Node",
-    "nodeName": "Node Name",
-    "nodeId": "Node ID",
-    "manageTunnel": "Tunnels",
-    "tunnelManagement": "Tunnel Management - Server Node {nodeId}",
-    "tunnelManagementDescription": "Manage tunnel configurations for server node {nodeId}",
-    "hostname": "Hostname",
-    "ip": "IP Address",
-    "serverAddr": "Server Address",
-    "platform": "Platform",
-    "osType": "OS Type",
-    "osRelease": "OS Release",
-    "cpuCores": "CPU Cores",
-    "memTotal": "Total Memory",
-    "frpVersion": "FRP Version",
-    "bridgeVersion": "Bridge Version",
-    "connectedAt": "Connected At",
-    "lastHeartbeat": "Last Heartbeat",
-    "createdAt": "Created At",
-    "detail": "Node Detail",
-    "notFound": "Node not found",
-    "fetchFailed": "Failed to fetch node list",
-    "fetchDetailFailed": "Failed to fetch node detail",
-    "totalNodes": "Total {count} nodes",
-    "status": {
-      "online": "Online",
-      "offline": "Offline",
-      "connecting": "Connecting",
-      "error": "Error"
-    }
-  },
   "tunnel": {
     "title": "Tunnel Management",
     "description": "Manage client tunnel configurations",
-    "selectNode": "Select Node",
-    "selectNodeFirst": "Please select a node first",
     "addTunnel": "Add Tunnel",
     "tunnelName": "Tunnel Name",
     "type": "Type",
     "localPort": "Local Port",
     "remotePort": "Remote Port",
+    "connections": "Connections",
+    "trafficIn": "Traffic In",
+    "trafficOut": "Traffic Out",
     "editTunnel": "Edit",
     "deleteTunnel": "Delete",
     "localIP": "Local IP",
@@ -168,7 +134,12 @@
     "deleteConfirm": "Confirm Delete",
     "deleteConfirmMessage": "Are you sure you want to delete tunnel \"{name}\"?",
     "deleteSuccess": "Tunnel deleted successfully",
-    "deleteFailed": "Failed to delete tunnel"
+    "deleteFailed": "Failed to delete tunnel",
+    "totalProxies": "Total {count} proxies",
+    "status": {
+      "online": "Online",
+      "offline": "Offline"
+    }
   },
   "frp": {
     "status": {

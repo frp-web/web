@@ -59,8 +59,7 @@
   "nav": {
     "dashboard": "仪表盘",
     "tunnel": "隧道管理",
-    "node": "节点",
-    "nodeManagement": "节点列表",
+    "proxy": "代理管理",
     "config": "配置"
   },
   "dashboard": {
@@ -99,50 +98,17 @@
       "description": "管理管理员账户信息"
     }
   },
-  "node": {
-    "title": "节点管理",
-    "description": "管理 FRP 服务端节点",
-    "addNode": "添加节点",
-    "nodeName": "节点名称",
-    "nodeId": "节点ID",
-    "manageTunnel": "隧道管理",
-    "tunnelManagement": "隧道管理 - 服务端节点 {nodeId}",
-    "tunnelManagementDescription": "管理服务端节点 {nodeId} 的隧道配置",
-    "hostname": "主机名",
-    "ip": "IP 地址",
-    "serverAddr": "服务器地址",
-    "platform": "平台",
-    "osType": "系统类型",
-    "osRelease": "系统版本",
-    "cpuCores": "CPU 核心数",
-    "memTotal": "总内存",
-    "frpVersion": "FRP 版本",
-    "bridgeVersion": "Bridge 版本",
-    "connectedAt": "连接时间",
-    "lastHeartbeat": "最后心跳",
-    "createdAt": "创建时间",
-    "detail": "节点详情",
-    "notFound": "节点不存在",
-    "fetchFailed": "获取节点列表失败",
-    "fetchDetailFailed": "获取节点详情失败",
-    "totalNodes": "共 {count} 个节点",
-    "status": {
-      "online": "在线",
-      "offline": "离线",
-      "connecting": "连接中",
-      "error": "错误"
-    }
-  },
   "tunnel": {
     "title": "隧道管理",
     "description": "管理客户端隧道配置",
-    "selectNode": "选择节点",
-    "selectNodeFirst": "请先选择一个节点",
     "addTunnel": "添加隧道",
     "tunnelName": "隧道名称",
     "type": "类型",
     "localPort": "本地端口",
     "remotePort": "远程端口",
+    "connections": "连接数",
+    "trafficIn": "入站流量",
+    "trafficOut": "出站流量",
     "editTunnel": "编辑",
     "deleteTunnel": "删除",
     "localIP": "本地 IP",
@@ -168,7 +134,12 @@
     "deleteConfirm": "确认删除",
     "deleteConfirmMessage": "确定要删除隧道 \"{name}\" 吗？",
     "deleteSuccess": "删除隧道成功",
-    "deleteFailed": "删除隧道失败"
+    "deleteFailed": "删除隧道失败",
+    "totalProxies": "共 {count} 个代理",
+    "status": {
+      "online": "在线",
+      "offline": "离线"
+    }
   },
   "frp": {
     "status": {

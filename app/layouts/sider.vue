@@ -5,11 +5,11 @@
         <NavMenuItem to="/">
           {{ $t('nav.dashboard') }}
         </NavMenuItem>
-        <NavMenuItem to="/tunnel">
-          {{ frpMode === 'server' ? $t('nav.tunnel') : $t('nav.tunnel') }}
+        <NavMenuItem v-if="frpMode === 'server'" to="/proxy">
+          {{ $t('nav.proxy') }}
         </NavMenuItem>
-        <NavMenuItem v-if="frpMode === 'server'" to="/node">
-          {{ $t('nav.nodeManagement') }}
+        <NavMenuItem v-else to="/tunnel">
+          {{ $t('nav.tunnel') }}
         </NavMenuItem>
         <NavMenuItem to="/config">
           {{ $t('nav.config') }}

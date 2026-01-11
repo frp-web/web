@@ -1,45 +1,32 @@
 <template>
   <section flex="~ col" gap-6>
-    <!-- Server 模式的节点选择器 -->
-    <header v-if="configStore.frpMode === 'server'" flex="~ wrap" items-center justify-between gap-4>
+    <!-- 页面标题和描述 -->
+    <header flex="~ wrap" items-center justify-between gap-4>
       <div>
-        <AntSelect
-          v-model:value="selectedNodeId"
-          show-search
-          :placeholder="t('tunnel.selectNode')"
-          :options="nodeOptions"
-          :loading="nodesLoading"
-          :filter-option="filterNodeOption"
-          style="width: 300px"
-          @change="handleNodeChange"
-        >
-          <template #suffixIcon>
-            <span i-carbon-server />
-          </template>
-        </AntSelect>
+        <h2 text-xl font-semibold>
+          {{ configStore.frpMode === 'server' ? t('tunnel.serverTitle') : t('tunnel.title') }}
+        </h2>
+        <p text-secondary mt-1 text-sm>
+          {{ configStore.frpMode === 'server' ? t('tunnel.serverDesc') : t('tunnel.desc') }}
+        </p>
       </div>
+
+      <!-- frps 模式下的刷新按钮 -->
+      <AntButton v-if="configStore.frpMode === 'server'" :loading="refreshing" @click="handleRefresh">
+        <template #icon>
+          <span i-carbon-refresh />
+        </template>
+        {{ t('common.refresh') }}
+      </AntButton>
     </header>
 
-    <!-- Server 模式未选择节点时的提示 -->
-    <div v-if="configStore.frpMode === 'server' && !selectedNodeId" rounded-lg bg-container p-8 text-center>
-      <AntEmpty :description="t('tunnel.selectNodeFirst')">
-        <template #image>
-          <span i-carbon-server text-secondary text-64 />
-        </template>
-      </AntEmpty>
-    </div>
-
     <!-- 隧道管理组件 -->
-    <TunnelManager
-      v-else
-      :key="selectedNodeId || 'client'"
-      :node-id="configStore.frpMode === 'server' ? selectedNodeId : undefined"
-    />
+    <TunnelManager :mode="configStore.frpMode" :refresh-trigger="refreshTrigger" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useConfigStore } from '~/stores/config'
 
 definePageMeta({
@@ -49,65 +36,16 @@ definePageMeta({
 const { t } = useI18n()
 const configStore = useConfigStore()
 
-// 节点相关状态
-const nodes = ref<any[]>([])
-const nodesLoading = ref(false)
-const selectedNodeId = ref<string>()
+// 刷新相关状态
+const refreshing = ref(false)
+const refreshTrigger = ref(0)
 
-// 节点选项
-const nodeOptions = computed(() =>
-  nodes.value.map(node => ({
-    label: `${node.hostname || node.ip} (${node.id})`,
-    value: node.id,
-    status: node.status
-  }))
-)
-
-// 节点搜索过滤
-function filterNodeOption(input: string, option: any) {
-  return option.label.toLowerCase().includes(input.toLowerCase())
+// 刷新 frps 代理列表
+async function handleRefresh() {
+  refreshing.value = true
+  refreshTrigger.value++
+  // 等待组件完成刷新
+  await new Promise(resolve => setTimeout(resolve, 500))
+  refreshing.value = false
 }
-
-// 节点变化处理
-function handleNodeChange(nodeId: string) {
-  selectedNodeId.value = nodeId
-}
-
-// 获取节点列表
-async function fetchNodes() {
-  if (configStore.frpMode !== 'server') {
-    return
-  }
-
-  nodesLoading.value = true
-  try {
-    const response = await $fetch<{
-      success: boolean
-      data: { items: any[] }
-      error?: { code: string, message: string }
-    }>('/api/node/list')
-
-    if (response.success) {
-      nodes.value = response.data.items
-
-      // 如果没有选中的节点且节点列表不为空，默认选择第一个在线节点
-      if (!selectedNodeId.value && nodes.value.length > 0) {
-        const firstOnlineNode = nodes.value.find(n => n.status === 'online')
-        selectedNodeId.value = (firstOnlineNode || nodes.value[0]).id
-      }
-    }
-  }
-  catch (error) {
-    console.error('Failed to fetch nodes:', error)
-  }
-  finally {
-    nodesLoading.value = false
-  }
-}
-
-onMounted(() => {
-  if (configStore.frpMode === 'server') {
-    fetchNodes()
-  }
-})
 </script>
