@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const rpcServer = bridge.getRpcServer?.()
+    const rpcServer = bridge.getRpcServer()
 
     if (!rpcServer) {
       throw createError({

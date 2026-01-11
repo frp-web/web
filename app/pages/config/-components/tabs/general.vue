@@ -127,24 +127,26 @@ const modeOptions = [
 
 const modeModalOpen = ref(false)
 const modeSaving = ref(false)
-const selectedMode = ref<FrpMode>(store.frpMode)
+const selectedMode = ref<FrpMode | null>(null)
 
 async function handleFrpPackage() {
   await store.refreshFrpPackage()
 }
 
 function openModeModal() {
-  selectedMode.value = store.frpMode
+  selectedMode.value = store.frpMode ?? null
   modeModalOpen.value = true
 }
 
 async function handleConfirmMode() {
   try {
     modeSaving.value = true
-    await store.updateFrpMode(selectedMode.value)
-    // 模式切换后，刷新 FRP 配置以匹配最新模式
-    await store.fetchFrpConfig()
-    modeModalOpen.value = false
+    if (selectedMode.value) {
+      await store.updateFrpMode(selectedMode.value)
+      // 模式切换后，刷新 FRP 配置以匹配最新模式
+      await store.fetchFrpConfig()
+      modeModalOpen.value = false
+    }
   }
   finally {
     modeSaving.value = false

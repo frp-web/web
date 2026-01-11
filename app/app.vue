@@ -25,8 +25,8 @@ const theme = computed<ConfigProviderProps['theme']>(() => {
 const authStore = useAuthStore()
 
 // 应用初始化
-onMounted(() => {
-  AppInitializer.init()
+onMounted(async () => {
+  await AppInitializer.init()
 })
 
 // 应用清理

@@ -39,21 +39,11 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    locales: [
-      {
-        code: 'zh-CN',
-        name: '简体中文',
-        file: 'zh-CN.json'
-      },
-      {
-        code: 'en-US',
-        name: 'English',
-        file: 'en-US.json'
-      }
-    ],
-    langDir: '../i18n/locales',
     defaultLocale: 'zh-CN',
-    strategy: 'no_prefix'
+    locales: [
+      { code: 'zh-CN', name: '简体中文', file: 'zh-CN.json' },
+      { code: 'en-US', name: 'English', file: 'en-US.json' }
+    ]
   },
 
   imports: {

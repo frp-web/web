@@ -1,8 +1,7 @@
 import { useFrpBridge } from '~~/server/bridge'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   try {
-    const body = await readBody(event)
     const bridge = useFrpBridge()
 
     if (!bridge) {
@@ -12,20 +11,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // 添加隧道到本地 FRP 进程
-    const result = await bridge.execute({
-      name: 'proxy.add',
-      payload: body
+    // 使用 frp-bridge 的 proxy.list 查询
+    const queryResult = await bridge.query({
+      name: 'proxy.list'
     })
 
     return {
       success: true,
-      data: result
+      data: Array.isArray(queryResult.result) ? queryResult.result : []
     }
   }
   catch (error) {
-    console.error('[API] tunnel.add error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to add tunnel'
+    console.error('[API] tunnel.list error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to list tunnels'
     return {
       success: false,
       error: {

@@ -89,10 +89,10 @@ function createBridge(): FrpBridge {
   const bridge = new FrpBridge({
     mode,
     workDir,
-    configPath: getConfigPath(mode),
     process: {
       mode,
-      workDir
+      workDir,
+      configPath: getConfigPath(mode)
     },
     // 注册所有自定义命令
     commands: customCommands,

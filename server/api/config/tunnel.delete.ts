@@ -13,14 +13,21 @@ export default defineEventHandler(async (event) => {
     }
 
     // 删除隧道
-    const result = await bridge.execute({
+    const commandResult = await bridge.execute({
       name: 'proxy.remove',
-      payload: body
+      payload: { name: body.name }
     })
+
+    if (commandResult.status === 'failed') {
+      return {
+        success: false,
+        error: commandResult.error
+      }
+    }
 
     return {
       success: true,
-      data: result
+      data: commandResult.result
     }
   }
   catch (error) {
@@ -29,7 +36,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: false,
       error: {
-        code: 'EXECUTION_ERROR',
+        code: 'RUNTIME_ERROR',
         message
       }
     }

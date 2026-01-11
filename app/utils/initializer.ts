@@ -1,3 +1,4 @@
+import { useConfigStore } from '~/stores/config'
 import { useFrpStore } from '~/stores/frp'
 
 /**
@@ -11,17 +12,34 @@ export class AppInitializer {
    * 初始化应用
    * 该方法应该在整个应用启动时调用一次
    */
-  static init() {
+  static async init() {
     // 防止重复初始化
     if (this.initialized) {
       return
     }
+
+    // 初始化配置（必须最先执行，因为其他模块依赖配置）
+    await this.initConfig()
 
     // 初始化 FRP 状态管理
     this.initFrpStore()
 
     // 标记为已初始化
     this.initialized = true
+  }
+
+  /**
+   * 初始化应用配置
+   * 获取 frpMode、theme 等基础配置
+   */
+  private static async initConfig() {
+    const configStore = useConfigStore()
+    try {
+      await configStore.fetchAppSettings()
+    }
+    catch (error) {
+      console.error('[Initializer] Failed to fetch app settings:', error)
+    }
   }
 
   /**

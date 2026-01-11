@@ -56,7 +56,7 @@ export const useConfigStore = defineStore('config', () => {
   const theme = ref<ThemeMode>('system')
   const themeSaving = ref(false)
 
-  const frpMode = ref<FrpMode>('server')
+  const frpMode = ref<FrpMode | null>(null)
 
   // 监听主题变化，同步到 color-mode
   if (import.meta.client) {

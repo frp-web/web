@@ -13,14 +13,27 @@ export default defineEventHandler(async (event) => {
     }
 
     // 更新隧道
-    const result = await bridge.execute({
+    // body 包含: { oldName: string, name: string, type: string, ...otherFields }
+    const { oldName, ...proxyData } = body
+
+    const commandResult = await bridge.execute({
       name: 'proxy.update',
-      payload: body
+      payload: {
+        name: oldName,
+        proxy: proxyData
+      }
     })
+
+    if (commandResult.status === 'failed') {
+      return {
+        success: false,
+        error: commandResult.error
+      }
+    }
 
     return {
       success: true,
-      data: result
+      data: commandResult.result
     }
   }
   catch (error) {
@@ -29,7 +42,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: false,
       error: {
-        code: 'EXECUTION_ERROR',
+        code: 'RUNTIME_ERROR',
         message
       }
     }
