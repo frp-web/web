@@ -22,7 +22,11 @@
     "warning": "警告",
     "info": "信息",
     "close": "关闭",
-    "detail": "详情"
+    "detail": "详情",
+    "day": "天",
+    "hour": "小时",
+    "minute": "分",
+    "second": "秒"
   },
   "app": {
     "title": "FRP Web",

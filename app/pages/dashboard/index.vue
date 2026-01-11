@@ -78,12 +78,6 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
-import duration from 'dayjs/plugin/duration'
-
-// 配置 Day.js
-dayjs.extend(duration)
-
 const { t } = useI18n()
 const frpStore = useFrpStore()
 const starting = ref(false)
@@ -98,7 +92,7 @@ const restartConfirmVisible = ref(false)
 const formattedUptime = computed(() => {
   if (!frpStore.isRunning || frpStore.currentUptime <= 0)
     return ''
-  return dayjs.duration(frpStore.currentUptime).humanize()
+  return formatUptime(frpStore.currentUptime, t)
 })
 
 // 翻译状态文本

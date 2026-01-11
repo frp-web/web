@@ -22,7 +22,11 @@
     "warning": "Warning",
     "info": "Info",
     "close": "Close",
-    "detail": "Detail"
+    "detail": "Detail",
+    "day": "day",
+    "hour": "hr",
+    "minute": "min",
+    "second": "sec"
   },
   "app": {
     "title": "FRP Web",

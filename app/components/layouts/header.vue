@@ -58,19 +58,8 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
-import duration from 'dayjs/plugin/duration'
-import relativeTime from 'dayjs/plugin/relativeTime'
-
 import { useAuthStore } from '~/stores/auth'
 import { useFrpStore } from '~/stores/frp'
-
-import 'dayjs/locale/zh-cn'
-
-// 配置 Day.js
-dayjs.extend(duration)
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -81,25 +70,7 @@ const router = useRouter()
 const formattedUptime = computed(() => {
   if (!frpStore.isRunning || frpStore.currentUptime <= 0)
     return ''
-
-  const duration = dayjs.duration(frpStore.currentUptime)
-  const parts: string[] = []
-
-  const days = duration.days()
-  const hours = duration.hours()
-  const minutes = duration.minutes()
-  const seconds = duration.seconds()
-
-  if (days > 0)
-    parts.push(`${days}${t('common.day')}`)
-  if (hours > 0)
-    parts.push(`${hours}${t('common.hour')}`)
-  if (minutes > 0)
-    parts.push(`${minutes}${t('common.minute')}`)
-  if (seconds > 0 || parts.length === 0)
-    parts.push(`${seconds}${t('common.second')}`)
-
-  return parts.join(' ')
+  return formatUptime(frpStore.currentUptime, t)
 })
 
 // 翻译状态文本
