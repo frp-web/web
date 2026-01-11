@@ -137,7 +137,20 @@ export const useFrpStore = defineStore('frp', () => {
   async function startFrp() {
     try {
       // 调用实际的启动 API
-      await $fetch('/api/commands/start', { method: 'POST' })
+      const result = await $fetch<{ success: boolean, status: string, data?: { pid?: number, uptime?: number } }>('/api/commands/start', { method: 'POST' })
+
+      // 立即更新状态，使用 API 返回的数据
+      if (result.success && result.data?.pid) {
+        isRunning.value = true
+        const uptime = result.data.uptime || 0
+        processInfo.value = {
+          pid: result.data.pid,
+          uptime,
+          startTime: Date.now()
+        }
+        currentUptime.value = uptime
+        startUptimeTimer()
+      }
     }
     catch (error) {
       console.error('启动 FRP 失败:', error)

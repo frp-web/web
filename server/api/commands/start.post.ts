@@ -8,20 +8,32 @@ export default defineEventHandler(async () => {
 
     // 检查是否已经在运行
     if (processManager.isRunning()) {
+      const processInfo = processManager.queryProcess()
       return {
         success: true,
         message: 'FRP service is already running',
-        status: 'running'
+        status: 'running',
+        data: {
+          pid: processInfo.pid,
+          uptime: processInfo.uptime
+        }
       }
     }
 
     // 启动 FRP 进程
     await processManager.start()
 
+    // 获取进程信息
+    const processInfo = processManager.queryProcess()
+
     return {
       success: true,
       message: 'FRP service started successfully',
-      status: 'running'
+      status: 'running',
+      data: {
+        pid: processInfo.pid,
+        uptime: processInfo.uptime
+      }
     }
   }
   catch (error) {
