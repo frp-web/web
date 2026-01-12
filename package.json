@@ -22,7 +22,7 @@
     "adm-zip": "^0.5.16",
     "ant-design-vue": "^4.2.6",
     "dayjs": "^1.11.19",
-    "frp-bridge": "^0.0.1",
+    "frp-bridge": "^0.0.2",
     "monaco-editor": "^0.54.0",
     "nuxt": "^4.2.1",
     "pinia": "^3.0.4",
