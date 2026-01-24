@@ -1,9 +1,9 @@
 import type { RuntimeMode } from 'frp-bridge/runtime'
 import { EventEmitter } from 'node:events'
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
-import { FrpBridge } from 'frp-bridge'
+import { FrpBridge, saveFrpConfigFile } from 'frp-bridge'
 import { getConfigDir, getConfigPath, getDataDir, getWorkDir } from '~~/app/constants/paths'
 import { appStorage } from '~~/src/storages'
 import { customCommands } from './commands'
@@ -69,18 +69,117 @@ export function useFrpBridge(): FrpBridge {
   return bridgeInstance
 }
 
+/**
+ * 生成 FRP 配置文件（合并预设配置和用户 tunnels）
+ * 每次调用都会重新生成并覆盖 configPath 下的配置文件
+ */
+export async function generateFrpConfig(): Promise<void> {
+  const mode = getMode()
+  const configPath = getConfigPath(mode)
+
+  // 1. 读取预设配置
+  const presetConfig = await loadPresetConfig(mode)
+
+  // 2. 读取用户 tunnels（根据模式使用不同方式）
+  const bridge = useFrpBridge()
+  let tunnels: any[] = []
+
+  if (mode === 'client') {
+    // client 模式：从 processManager 获取
+    const processManager = bridge.getProcessManager()
+    tunnels = processManager.listTunnels()
+  }
+  else {
+    // server 模式：从配置文件读取或使用空数组
+    tunnels = await loadTunnelsFromConfig(configPath)
+  }
+
+  // 3. 使用 saveFrpConfigFile 生成并保存配置文件
+  saveFrpConfigFile(configPath, tunnels, presetConfig, mode === 'server' ? 'frps' : 'frpc')
+}
+
+/**
+ * 从配置文件读取 tunnels
+ */
+async function loadTunnelsFromConfig(configPath: string): Promise<any[]> {
+  if (!existsSync(configPath)) {
+    return []
+  }
+
+  try {
+    const content = readFileSync(configPath, 'utf-8')
+    // 简单解析 proxies 部分
+    const lines = content.split('\n')
+    const result: any[] = []
+    let currentProxy: any = null
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('[[proxies]]')) {
+        if (currentProxy) {
+          result.push(currentProxy)
+        }
+        currentProxy = {}
+      }
+      else if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        // 跳过其他 section
+        if (currentProxy) {
+          result.push(currentProxy)
+          currentProxy = null
+        }
+      }
+      else if (currentProxy && trimmed && !trimmed.startsWith('#')) {
+        const eqIndex = trimmed.indexOf('=')
+        if (eqIndex > 0) {
+          const key = trimmed.slice(0, eqIndex).trim()
+          let value: any = trimmed.slice(eqIndex + 1).trim()
+          if (value.startsWith('"') || value.startsWith('\'')) {
+            value = value.slice(1, -1)
+          }
+          currentProxy[key] = value
+        }
+      }
+    }
+
+    if (currentProxy) {
+      result.push(currentProxy)
+    }
+
+    return result
+  }
+  catch {
+    return []
+  }
+}
+
+/**
+ * 读取预设配置
+ */
+async function loadPresetConfig(mode: RuntimeMode) {
+  const configDir = getConfigDir()
+  const presetType = mode === 'server' ? 'frps' : 'frpc'
+  const presetPath = join(configDir, `${presetType}-preset.json`)
+
+  if (!existsSync(presetPath)) {
+    return {}
+  }
+
+  try {
+    const content = readFileSync(presetPath, 'utf-8')
+    const config = JSON.parse(content)
+    return { [presetType]: config }
+  }
+  catch {
+    return {}
+  }
+}
+
 export async function readConfigFileText(): Promise<RawConfigSnapshot> {
   const mode = getMode()
   const configPath = getConfigPath(mode)
-  const { readFileSync } = await import('node:fs')
-
-  // 如果配置文件不存在，尝试从下载的 FRP 包中复制默认配置
-  if (!existsSync(configPath)) {
-    await copyDefaultConfigIfExists()
-  }
 
   if (!existsSync(configPath)) {
-    throw new Error('FRP config file is missing and no default config found in downloaded package')
+    throw new Error('FRP config file not found, please start FRP service first')
   }
 
   const text = readFileSync(configPath, 'utf-8')
@@ -162,69 +261,4 @@ function parseMode(mode?: string): RuntimeMode {
     return mode
   }
   return 'server'
-}
-
-/**
- * 尝试从下载的 FRP 包中复制默认配置文件
- * @returns 是否成功复制
- */
-async function copyDefaultConfigIfExists(): Promise<boolean> {
-  const mode = getMode()
-  const dataDir = getDataDir()
-  const targetConfigPath = getConfigPath(mode)
-
-  // 如果目标配置已存在，无需复制
-  if (existsSync(targetConfigPath)) {
-    return false
-  }
-
-  // 在 data 目录中查找解压的 FRP 包
-  if (!existsSync(dataDir)) {
-    return false
-  }
-
-  try {
-    const entries = readdirSync(dataDir, { withFileTypes: true })
-    const configFileName = mode === 'server' ? 'frps.toml' : 'frpc.toml'
-
-    // 查找 frp 开头的目录（解压后的目录通常是 frp_x.x.x_xxx）
-    for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith('frp')) {
-        const frpDir = join(dataDir, entry.name)
-        const sourceConfigPath = join(frpDir, configFileName)
-
-        // 如果找到默认配置文件，复制到配置目录
-        if (existsSync(sourceConfigPath)) {
-          copyFileSync(sourceConfigPath, targetConfigPath)
-          console.warn(`Copied default config from ${sourceConfigPath} to ${targetConfigPath}`)
-
-          // 如果是 server 模式，添加 webServer 配置
-          if (mode === 'server') {
-            const { appendFileSync, readFileSync } = await import('node:fs')
-            try {
-              const configContent = readFileSync(targetConfigPath, 'utf-8')
-
-              // 检查是否已存在 webServer 配置
-              if (!configContent.includes('webServer.addr')) {
-                // 添加 webServer 配置
-                const webServerConfig = '\n# webServer 配置 - 用于获取 FRPS 连接数据\nwebServer.addr = "127.0.0.1"\nwebServer.port = 7500\nwebServer.user = "admin"\nwebServer.password = "admin"\n'
-                appendFileSync(targetConfigPath, webServerConfig)
-                console.warn(`Added webServer config to: ${targetConfigPath}`)
-              }
-            }
-            catch (error) {
-              console.error('Failed to add webServer config:', error)
-            }
-          }
-
-          return true
-        }
-      }
-    }
-  }
-  catch (error) {
-    console.error('Failed to copy default config:', error)
-  }
-
-  return false
 }

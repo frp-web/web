@@ -1,5 +1,5 @@
 import { createError, defineEventHandler } from 'h3'
-import { useFrpBridge } from '~~/server/bridge'
+import { generateFrpConfig, useFrpBridge } from '~~/server/bridge'
 
 export default defineEventHandler(async () => {
   try {
@@ -19,6 +19,9 @@ export default defineEventHandler(async () => {
         }
       }
     }
+
+    // 启动前先生成配置文件（合并预设配置和用户 tunnels）
+    await generateFrpConfig()
 
     // 启动 FRP 进程
     await processManager.start()

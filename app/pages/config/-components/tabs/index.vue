@@ -5,7 +5,7 @@
         <GeneralTab />
       </AntTabPane>
       <AntTabPane key="frp" tab="FRP 配置">
-        <FrpTab />
+        <FrpConfigTab />
       </AntTabPane>
       <AntTabPane key="account" tab="帐号设置">
         <AccountTab />
@@ -16,8 +16,8 @@
 
 <script setup lang="ts">
 import AccountTab from './account.vue'
-import FrpTab from './frp.vue'
 import GeneralTab from './general.vue'
+import FrpConfigTab from './preset.vue'
 
 const activeKey = ref('general')
 </script>

@@ -9,9 +9,6 @@
           {{ $t('config.description') }}
         </p>
       </div>
-      <AntButton :loading="store.frpLoading" @click="handleReload">
-        {{ $t('config.reload') }}
-      </AntButton>
     </header>
 
     <AntSpin :spinning="spinning">
@@ -49,11 +46,4 @@ await useAsyncData('config/bootstrap', async () => {
 })
 
 const spinning = computed(() => store.frpLoading)
-
-async function handleReload() {
-  await Promise.all([
-    store.fetchFrpConfig(),
-    store.fetchAppSettings()
-  ])
-}
 </script>
