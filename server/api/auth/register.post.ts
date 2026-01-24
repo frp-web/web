@@ -8,35 +8,35 @@ export default defineEventHandler(async (event) => {
   if (!body.username || !body.password) {
     throw createError({
       statusCode: 400,
-      message: '用户名和密码不能为空'
+      message: 'Username and password are required'
     })
   }
 
   if (!body.frpMode || (body.frpMode !== 'client' && body.frpMode !== 'server')) {
     throw createError({
       statusCode: 400,
-      message: '请选择运行模式'
+      message: 'Please select a running mode'
     })
   }
 
   if (appStorage.username && appStorage.hashedPassword) {
     throw createError({
       statusCode: 400,
-      message: '用户已存在，请直接登录'
+      message: 'User already exists, please login'
     })
   }
 
   if (body.username.length < 3 || body.username.length > 20) {
     throw createError({
       statusCode: 400,
-      message: '用户名长度必须在 3-20 个字符之间'
+      message: 'Username length must be between 3-20 characters'
     })
   }
 
   if (body.password.length < 6) {
     throw createError({
       statusCode: 400,
-      message: '密码长度至少为 6 个字符'
+      message: 'Password must be at least 6 characters'
     })
   }
 

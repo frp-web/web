@@ -7,14 +7,14 @@ export default defineEventHandler(async (event) => {
   if (!body.username || !body.password) {
     throw createError({
       statusCode: 400,
-      message: '用户名和密码不能为空'
+      message: 'Username and password are required'
     })
   }
 
   if (!appStorage.username || !appStorage.hashedPassword) {
     throw createError({
       statusCode: 404,
-      message: '用户不存在，请先注册'
+      message: 'User not found, please register first'
     })
   }
 
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   if (body.username !== appStorage.username || hashedPassword !== appStorage.hashedPassword) {
     throw createError({
       statusCode: 401,
-      message: '用户名或密码错误'
+      message: 'Invalid username or password'
     })
   }
 
