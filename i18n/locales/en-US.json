@@ -100,7 +100,10 @@
   },
   "tunnel": {
     "title": "Tunnel Management",
+    "desc": "Manage client tunnel configurations",
     "description": "Manage client tunnel configurations",
+    "serverTitle": "Proxy Management",
+    "serverDesc": "Manage server proxy configurations",
     "addTunnel": "Add Tunnel",
     "tunnelName": "Tunnel Name",
     "type": "Type",

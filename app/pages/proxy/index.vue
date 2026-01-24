@@ -2,10 +2,10 @@
   <section flex="~ col" gap-6>
     <header flex="~ wrap" items-center justify-between gap-4>
       <div>
-        <h2 text-xl font-semibold>
+        <h2 text-xl color-base font-semibold>
           {{ t('tunnel.serverTitle') }}
         </h2>
-        <p text-secondary mt-1 text-sm>
+        <p mt-1 text-sm color-secondary>
           {{ t('tunnel.serverDesc') }}
         </p>
       </div>

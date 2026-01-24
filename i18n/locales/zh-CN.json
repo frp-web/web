@@ -100,7 +100,10 @@
   },
   "tunnel": {
     "title": "隧道管理",
+    "desc": "管理客户端隧道配置",
     "description": "管理客户端隧道配置",
+    "serverTitle": "代理管理",
+    "serverDesc": "管理服务端代理配置",
     "addTunnel": "添加隧道",
     "tunnelName": "隧道名称",
     "type": "类型",

@@ -3,10 +3,10 @@
     <!-- 页面标题和描述 -->
     <header flex="~ wrap" items-center justify-between gap-4>
       <div>
-        <h2 text-xl font-semibold>
+        <h2 text-xl color-base font-semibold>
           {{ configStore.frpMode === 'server' ? t('tunnel.serverTitle') : t('tunnel.title') }}
         </h2>
-        <p text-secondary mt-1 text-sm>
+        <p mt-1 text-sm color-secondary>
           {{ configStore.frpMode === 'server' ? t('tunnel.serverDesc') : t('tunnel.desc') }}
         </p>
       </div>
