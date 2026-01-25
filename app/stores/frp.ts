@@ -4,6 +4,14 @@ import duration from 'dayjs/plugin/duration'
 // 配置 Day.js
 dayjs.extend(duration)
 
+interface FrpDownloadProgress {
+  stage: 'check' | 'downloading' | 'extracting' | 'complete' | 'error' | 'up-to-date'
+  version?: string
+  progress?: number
+  message?: string
+  error?: string
+}
+
 export const useFrpStore = defineStore('frp', () => {
   // FRP 状态相关
   const isRunning = ref(false)
@@ -19,6 +27,9 @@ export const useFrpStore = defineStore('frp', () => {
   // 实时计算的 uptime
   const currentUptime = ref(0)
   let uptimeTimer: NodeJS.Timeout | null = null
+
+  // FRP 下载进度
+  const downloadProgress = ref<FrpDownloadProgress | null>(null)
 
   // SSE 连接
   let eventSource: EventSource | null = null
@@ -66,7 +77,7 @@ export const useFrpStore = defineStore('frp', () => {
       eventSource.close()
     }
 
-    eventSource = new EventSource('/api/status/frp')
+    eventSource = new EventSource('/api/status/events')
 
     eventSource.onmessage = (e) => {
       try {
@@ -99,6 +110,62 @@ export const useFrpStore = defineStore('frp', () => {
             break
           case 'process:error':
             console.error('FRP 错误:', data.payload?.error)
+            break
+          // FRP 下载进度事件
+          case 'frp:check':
+            downloadProgress.value = { stage: 'check', message: data.payload?.message }
+            break
+          case 'frp:checked':
+            downloadProgress.value = {
+              stage: 'complete',
+              version: data.payload?.version,
+              message: data.payload?.message
+            }
+            break
+          case 'frp:up-to-date':
+            downloadProgress.value = {
+              stage: 'up-to-date',
+              version: data.payload?.version,
+              message: data.payload?.message
+            }
+            break
+          case 'frp:download-start':
+            downloadProgress.value = {
+              stage: 'downloading',
+              version: data.payload?.version,
+              progress: 0,
+              message: data.payload?.message
+            }
+            break
+          case 'frp:downloading':
+          case 'frp:download-progress':
+            downloadProgress.value = {
+              stage: 'downloading',
+              version: data.payload?.version,
+              progress: data.payload?.progress || 0,
+              message: data.payload?.message
+            }
+            break
+          case 'frp:download-complete':
+            downloadProgress.value = {
+              stage: 'extracting',
+              version: data.payload?.version,
+              message: data.payload?.message
+            }
+            break
+          case 'frp:complete':
+            downloadProgress.value = {
+              stage: 'complete',
+              version: data.payload?.version,
+              message: data.payload?.message
+            }
+            break
+          case 'frp:error':
+            downloadProgress.value = {
+              stage: 'error',
+              message: data.payload?.message,
+              error: data.payload?.error
+            }
             break
         }
 
@@ -193,6 +260,7 @@ export const useFrpStore = defineStore('frp', () => {
     loading,
     processInfo,
     currentUptime,
+    downloadProgress,
 
     // 计算属性
     frpStatusText,

@@ -30,6 +30,7 @@ interface FrpPackageState {
 interface AppSettingsResponse {
   theme: ThemeMode
   frpMode: FrpMode
+  githubTokenConfigured: boolean
   frp: FrpPackageState
 }
 
@@ -57,6 +58,8 @@ export const useConfigStore = defineStore('config', () => {
   const themeSaving = ref(false)
 
   const frpMode = ref<FrpMode | null>(null)
+
+  const githubTokenConfigured = ref(false)
 
   // 监听主题变化，同步到 color-mode
   if (import.meta.client) {
@@ -145,7 +148,16 @@ export const useConfigStore = defineStore('config', () => {
     const data = await $fetch<AppSettingsResponse>('/api/config/app')
     theme.value = data.theme
     frpMode.value = data.frpMode
+    githubTokenConfigured.value = data.githubTokenConfigured
     Object.assign(frpPackage, data.frp)
+  }
+
+  async function saveGithubToken(token: string) {
+    const data = await $fetch<{ githubTokenConfigured: boolean }>('/api/config/app', {
+      method: 'PUT',
+      body: { githubToken: token }
+    })
+    githubTokenConfigured.value = data.githubTokenConfigured
   }
 
   async function updateTheme(value: ThemeMode) {
@@ -237,6 +249,7 @@ export const useConfigStore = defineStore('config', () => {
     theme,
     themeSaving,
     frpMode,
+    githubTokenConfigured,
     frpPackage,
     frpPackageLoading,
     accountDraft,
@@ -252,6 +265,7 @@ export const useConfigStore = defineStore('config', () => {
     updateTheme,
     updateFrpMode,
     refreshFrpPackage,
+    saveGithubToken,
     updateAccountDraft,
     saveAccountDraft,
     resetAccountDraft

@@ -8,6 +8,7 @@ interface DownloadOptions {
   workDir: string
   version: string
   downloadUrl: string
+  onProgress?: (progress: number) => void
 }
 
 /**
@@ -15,7 +16,7 @@ interface DownloadOptions {
  * @returns 解压后的 FRP 目录路径
  */
 export async function downloadAndInstallFrp(options: DownloadOptions): Promise<string> {
-  const { version, downloadUrl } = options
+  const { version, downloadUrl, onProgress } = options
 
   // 创建必要的目录
   const dataDir = getDataDir()
@@ -29,7 +30,7 @@ export async function downloadAndInstallFrp(options: DownloadOptions): Promise<s
 
   // 下载压缩包
   const archivePath = join(tempDir, `frp${archiveExt}`)
-  await downloadFile(downloadUrl, archivePath)
+  await downloadFile(downloadUrl, archivePath, onProgress)
 
   // 解压到临时目录
   const extractDir = join(tempDir, 'extract')
@@ -95,7 +96,7 @@ export async function downloadAndInstallFrp(options: DownloadOptions): Promise<s
   return targetFrpDir
 }
 
-async function downloadFile(url: string, destPath: string): Promise<void> {
+async function downloadFile(url: string, destPath: string, onProgress?: (progress: number) => void): Promise<void> {
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error(`Failed to download: ${response.statusText}`)
@@ -105,8 +106,27 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
     throw new Error('Response body is null')
   }
 
+  // 获取文件总大小用于计算进度
+  const contentLength = response.headers.get('content-length')
+  const totalBytes = contentLength ? Number.parseInt(contentLength, 10) : 0
+  let downloadedBytes = 0
+
   const fileStream = createWriteStream(destPath)
-  await pipeline(response.body as any, fileStream)
+
+  // 创建一个转换流来跟踪进度
+  const { Transform } = await import('node:stream')
+  const progressTransform = new Transform({
+    transform(chunk, encoding, callback) {
+      downloadedBytes += chunk.length
+      if (onProgress && totalBytes > 0) {
+        const progress = Math.round(downloadedBytes / totalBytes * 10000) / 10000
+        onProgress(Math.min(progress, 1))
+      }
+      callback(null, chunk)
+    }
+  })
+
+  await pipeline(response.body as any, progressTransform, fileStream)
 }
 
 async function extractTarGz(archivePath: string, destDir: string): Promise<void> {

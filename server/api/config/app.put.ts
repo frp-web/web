@@ -5,6 +5,7 @@ import { appStorage } from '~~/src/storages/app'
 interface UpdateAppSettingsBody {
   theme?: ThemeMode
   frpMode?: FrpMode
+  githubToken?: string
 }
 
 const themes: ThemeMode[] = ['system', 'light', 'dark']
@@ -32,8 +33,13 @@ export default defineEventHandler(async (event) => {
     appStorage.frpMode = body.frpMode
   }
 
+  if ('githubToken' in body) {
+    appStorage.githubToken = body.githubToken ?? ''
+  }
+
   return {
     theme: appStorage.theme,
-    frpMode: appStorage.frpMode
+    frpMode: appStorage.frpMode,
+    githubTokenConfigured: Boolean(appStorage.githubToken)
   }
 })

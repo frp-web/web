@@ -9,11 +9,13 @@ class AppStorage extends BaseStorage<{
   frpMode: FrpMode
   username: string
   hashedPassword: string
+  githubToken: string
 }> {
   theme: ThemeMode = 'system'
   frpMode: FrpMode = 'server'
   username = ''
   hashedPassword = ''
+  githubToken = ''
 }
 
 export const appStorage = useStorage(AppStorage)

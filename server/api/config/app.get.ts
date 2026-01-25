@@ -8,6 +8,7 @@ export default defineEventHandler(() => {
   return {
     theme: appStorage.theme,
     frpMode: appStorage.frpMode,
+    githubTokenConfigured: Boolean(appStorage.githubToken),
     frp: {
       version: frpPackageStorage.version,
       releaseName: frpPackageStorage.releaseName,
