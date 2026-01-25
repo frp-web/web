@@ -5,17 +5,14 @@
         <div flex="~ col gap-3" md="flex-row items-center justify-between" group="settings">
           <div>
             <p text-base font-medium>
-              FRP 版本
+              {{ $t('frp.version') }}
             </p>
             <p text-sm color-secondary>
               <template v-if="store.frpPackage.version">
-                当前版本：{{ store.frpPackage.version }}
-                <span v-if="store.frpPackage.updatedAt">
-                  ，更新于 {{ updatedTimeLabel }}
-                </span>
+                {{ $t('frp.currentVersion', { version: store.frpPackage.version, time: updatedTimeLabel }) }}
               </template>
               <template v-else>
-                尚未下载 FRP，点击右侧按钮获取最新版本
+                {{ $t('frp.notDownloaded') }}
               </template>
             </p>
           </div>
@@ -51,37 +48,37 @@
       <div flex="~ col gap-3" md="flex-row items-center justify-between" p="4">
         <div>
           <p text-base font-medium>
-            模式切换
+            {{ $t('frp.switchMode') }}
           </p>
           <p text-sm color-secondary>
             <template v-if="store.frpMode === 'client'">
-              当前模式：客户端 (frpc)
+              {{ $t('frp.currentModeClient') }}
             </template>
             <template v-else>
-              当前模式：服务端 (frps)
+              {{ $t('frp.currentModeServer') }}
             </template>
             <template v-if="frpStore.isRunning">
               <br>
-              <span text-warning font-medium>⚠ FRP 服务正在运行中</span>
+              <span text-warning font-medium>⚠ {{ $t('frp.serviceRunning') }}</span>
             </template>
           </p>
         </div>
         <AntButton :loading="modeSaving" @click="openModeModal">
-          切换模式
+          {{ $t('frp.switchMode') }}
         </AntButton>
       </div>
     </section>
 
-    <AntModal v-model:open="modeModalOpen" title="切换 FRP 模式" :confirm-loading="modeSaving" @ok="handleConfirmMode">
+    <AntModal v-model:open="modeModalOpen" :title="$t('frp.switchMode')" :confirm-loading="modeSaving" @ok="handleConfirmMode">
       <div flex="~ col" gap="3">
         <p text-sm color-secondary>
-          请选择运行模式：
+          {{ $t('frp.selectMode') }}
         </p>
         <AntSelect v-model:value="selectedMode" :options="modeOptions" />
         <p text-xs color-secondary>
-          - 客户端 (frpc)：直接管理当前实例的隧道
+          - {{ $t('frp.clientModeDesc') }}
           <br>
-          - 服务端 (frps)：管理接入节点并下发隧道配置
+          - {{ $t('frp.serverModeDesc') }}
         </p>
 
         <!-- 运行状态警告 -->
@@ -89,10 +86,10 @@
           v-if="frpStore.isRunning"
           type="warning"
           show-icon
-          message="FRP 服务正在运行"
+          :message="$t('frp.serviceRunning')"
         >
           <template #description>
-            切换模式将自动停止当前运行的 FRP 服务
+            {{ $t('frp.switchingModeWillStop') }}
           </template>
         </AntAlert>
 
@@ -101,57 +98,57 @@
           v-else-if="selectedMode !== store.frpMode"
           type="info"
           show-icon
-          :message="`切换到 ${selectedMode === 'client' ? '客户端' : '服务端'} 模式`"
+          :message="$t('frp.switchToMode', { mode: selectedMode === 'client' ? $t('auth.clientMode') : $t('auth.serverMode') })"
         >
           <template #description>
-            切换后需要重新启动 FRP 服务才能生效
+            {{ $t('frp.restartRequired') }}
           </template>
         </AntAlert>
       </div>
     </AntModal>
 
     <!-- GitHub Token 配置弹窗 -->
-    <AntModal v-model:open="githubTokenModalOpen" title="GitHub Token 配置" :confirm-loading="githubTokenSaving" @ok="handleSaveGithubToken">
+    <AntModal v-model:open="githubTokenModalOpen" :title="$t('frp.githubTokenConfig')" :confirm-loading="githubTokenSaving" @ok="handleSaveGithubToken">
       <div flex="~ col" gap="3">
         <p text-sm color-secondary>
-          配置 GitHub Token 可以提高 API 请求限额，避免速率限制。
+          {{ $t('frp.githubTokenDesc') }}
         </p>
         <AntInput
           v-model:value="githubTokenInput"
           type="password"
-          placeholder="ghp_xxxxxxxxxxxx"
+          :placeholder="$t('frp.tokenPlaceholder')"
           :maxlength="100"
           show-count
         />
         <p text-xs color-secondary>
-          <span color-base font-medium>如何获取 Token：</span>
+          <span color-base font-medium>{{ $t('frp.tokenHelp') }}</span>
           <br>
-          1. 访问 GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+          1. {{ $t('frp.tokenHelpStep1') }}
           <br>
-          2. 点击 "Generate new token (classic)"
+          2. {{ $t('frp.tokenHelpStep2') }}
           <br>
-          3. 选择权限（无需特殊权限，读取 public repo 即可）
+          3. {{ $t('frp.tokenHelpStep3') }}
           <br>
-          4. 生成后复制 Token 粘贴到上方输入框
+          4. {{ $t('frp.tokenHelpStep4') }}
         </p>
         <AntAlert
           v-if="store.githubTokenConfigured"
           type="success"
           show-icon
-          message="Token 已配置"
+          :message="$t('frp.tokenConfigured')"
         >
           <template #description>
-            当前已配置 GitHub Token，API 请求限额为每小时 5000 次。
+            {{ $t('frp.tokenConfiguredDesc') }}
           </template>
         </AntAlert>
         <AntAlert
           v-else
           type="warning"
           show-icon
-          message="未配置 Token"
+          :message="$t('frp.tokenNotConfigured')"
         >
           <template #description>
-            未配置 GitHub Token，API 请求限额为每小时 60 次，可能触发速率限制。
+            {{ $t('frp.tokenNotConfiguredDesc') }}
           </template>
         </AntAlert>
       </div>
@@ -165,6 +162,7 @@ import { computed, ref, watch } from 'vue'
 import { useConfigStore } from '~/stores/config'
 import { useFrpStore } from '~/stores/frp'
 
+const { t: $t } = useI18n()
 const store = useConfigStore()
 const frpStore = useFrpStore()
 
@@ -184,12 +182,12 @@ const updatedTimeLabel = computed(() => {
 })
 
 const actionLabel = computed(() => {
-  return store.frpPackage.installed ? '检查更新' : '下载最新版本'
+  return store.frpPackage.installed ? $t('frp.checkUpdate') : $t('frp.downloadLatest')
 })
 
 const modeOptions = [
-  { label: '客户端 (frpc)', value: 'client' satisfies FrpMode },
-  { label: '服务端 (frps)', value: 'server' satisfies FrpMode }
+  { label: $t('auth.clientMode'), value: 'client' satisfies FrpMode },
+  { label: $t('auth.serverMode'), value: 'server' satisfies FrpMode }
 ]
 
 const modeModalOpen = ref(false)
