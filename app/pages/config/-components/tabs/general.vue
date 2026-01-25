@@ -208,9 +208,11 @@ function clearProgress() {
   frpStore.downloadProgress = null
 }
 
-// 监听完成状态，3秒后自动清除提示
+// 监听完成状态，3秒后自动清除提示，并刷新配置
 watch(() => frpStore.downloadProgress?.stage, (stage) => {
   if (stage === 'complete' || stage === 'up-to-date') {
+    // 刷新配置信息（版本、安装状态等）
+    store.fetchAppSettings()
     setTimeout(() => {
       clearProgress()
     }, 3000)

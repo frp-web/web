@@ -1,5 +1,8 @@
+import { existsSync, unlinkSync } from 'node:fs'
 import { createError, defineEventHandler } from 'h3'
+import { getRunConfigPath } from '~~/app/constants/paths'
 import { generateFrpConfig, useFrpBridge } from '~~/server/bridge'
+import { appStorage } from '~~/src/storages'
 
 export default defineEventHandler(async () => {
   try {
@@ -21,6 +24,11 @@ export default defineEventHandler(async () => {
     }
 
     // 启动前先生成配置文件（合并预设配置和用户 tunnels）
+    // 删除运行配置以确保使用最新的预设配置
+    const runConfigPath = getRunConfigPath(appStorage.frpMode || 'server')
+    if (existsSync(runConfigPath)) {
+      unlinkSync(runConfigPath)
+    }
     await generateFrpConfig()
 
     // 启动 FRP 进程

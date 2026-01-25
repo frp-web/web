@@ -1,11 +1,11 @@
 import { createWriteStream, existsSync, mkdirSync } from 'node:fs'
-import { chmod, readdir, rename, rm } from 'node:fs/promises'
+import { chmod, copyFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import process from 'node:process'
 import { pipeline } from 'node:stream/promises'
-import { getBinDir, getDataDir, getTempDir } from '~~/app/constants/paths'
+import { getBinDir, getConfigDir, getUserConfigPath } from '~~/app/constants/paths'
 
 interface DownloadOptions {
-  workDir: string
   version: string
   downloadUrl: string
   onProgress?: (progress: number) => void
@@ -13,27 +13,32 @@ interface DownloadOptions {
 
 /**
  * 下载并安装 FRP 到指定目录
- * @returns 解压后的 FRP 目录路径
+ * @returns 安装的版本号
  */
 export async function downloadAndInstallFrp(options: DownloadOptions): Promise<string> {
   const { version, downloadUrl, onProgress } = options
 
   // 创建必要的目录
-  const dataDir = getDataDir()
-  const tempDir = getTempDir()
-  ensureDirectory(dataDir)
-  ensureDirectory(tempDir)
+  const binDir = getBinDir(version)
+  const configDir = getConfigDir()
+  ensureDirectory(binDir)
+  ensureDirectory(configDir)
 
   // 确定文件扩展名
   const isZip = downloadUrl.endsWith('.zip')
   const archiveExt = isZip ? '.zip' : '.tar.gz'
 
-  // 下载压缩包
-  const archivePath = join(tempDir, `frp${archiveExt}`)
+  // 下载压缩包到系统临时目录
+  const osTempDir = join(process.env.TEMP || '/tmp', 'frp-web-install')
+  ensureDirectory(osTempDir)
+  const archivePath = join(osTempDir, `frp_${version}${archiveExt}`)
   await downloadFile(downloadUrl, archivePath, onProgress)
 
   // 解压到临时目录
-  const extractDir = join(tempDir, 'extract')
+  const extractDir = join(osTempDir, `extract_${version}`)
+  if (existsSync(extractDir)) {
+    await rm(extractDir, { recursive: true, force: true })
+  }
   ensureDirectory(extractDir)
 
   if (isZip) {
@@ -51,29 +56,15 @@ export async function downloadAndInstallFrp(options: DownloadOptions): Promise<s
     throw new Error('Failed to find FRP directory in extracted archive')
   }
 
-  // 创建二进制文件目录
-  const binDir = getBinDir(version)
-  ensureDirectory(getBinDir())
-  ensureDirectory(binDir)
-
-  // 移动整个解压目录到 data 目录（保留配置文件）
   const sourceFrpDir = join(extractDir, frpDirEntry.name)
-  const targetFrpDir = join(dataDir, frpDirEntry.name)
-
-  // 如果目标目录已存在，先删除
-  if (existsSync(targetFrpDir)) {
-    await rm(targetFrpDir, { recursive: true, force: true })
-  }
-
-  await rename(sourceFrpDir, targetFrpDir)
 
   // 复制可执行文件到 bin 目录
   const executableNames = ['frps', 'frpc', 'frps.exe', 'frpc.exe']
   for (const name of executableNames) {
-    const source = join(targetFrpDir, name)
+    const source = join(sourceFrpDir, name)
     if (existsSync(source)) {
       const target = join(binDir, name)
-      await rename(source, target)
+      await copyFile(source, target)
       // 在 Unix 系统上添加执行权限
       if (!name.endsWith('.exe')) {
         try {
@@ -86,14 +77,23 @@ export async function downloadAndInstallFrp(options: DownloadOptions): Promise<s
     }
   }
 
-  // 清理临时目录和压缩包
-  await rm(tempDir, { recursive: true, force: true })
+  // 创建空白用户配置模板（如果不存在）
+  const userConfigTemplate = '# User configuration\n# Additional configurations can be added here. If duplicates with page configurations, they will be overridden.\n'
+  const serverUserConfigPath = getUserConfigPath('server')
+  const clientUserConfigPath = getUserConfigPath('client')
+  for (const targetConfig of [serverUserConfigPath, clientUserConfigPath]) {
+    // 只在目标文件不存在时创建模板
+    if (!existsSync(targetConfig)) {
+      const { writeFileSync } = await import('node:fs')
+      writeFileSync(targetConfig, userConfigTemplate, 'utf-8')
+    }
+  }
 
-  const cleanVersion = version.replace(/^v/, '')
-  console.warn(`FRP ${cleanVersion} installed successfully to ${binDir}`)
+  // 清理临时目录
+  await rm(extractDir, { recursive: true, force: true })
+  await rm(archivePath, { force: true })
 
-  // 返回解压目录路径，供后续复制配置文件使用
-  return targetFrpDir
+  return version
 }
 
 async function downloadFile(url: string, destPath: string, onProgress?: (progress: number) => void): Promise<void> {
@@ -144,7 +144,6 @@ async function extractTarGz(archivePath: string, destDir: string): Promise<void>
   catch (error: any) {
     // 如果标准解压失败，尝试使用 tar 包直接解压（可能是非 gzip 格式）
     if (error.message && error.message.includes('incorrect header check')) {
-      console.warn('Gzip decompression failed, trying direct tar extraction')
       await pipeline(
         createReadStream(archivePath),
         extract({ cwd: destDir })
@@ -164,7 +163,6 @@ async function extractZip(archivePath: string, destDir: string): Promise<void> {
     zip.extractAllTo(destDir, true)
   }
   catch (error) {
-    console.error('Failed to extract ZIP archive:', error)
     throw new Error(`Failed to extract ZIP archive: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

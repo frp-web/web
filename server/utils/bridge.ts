@@ -1,10 +1,10 @@
 import type { RuntimeMode } from 'frp-bridge/runtime'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 import { FrpBridge, mergeConfigs } from 'frp-bridge'
 
-import { getConfigDir, getConfigPath, getDataDir, getWorkDir } from '~~/app/constants/paths'
+import { getBinDir, getConfigDir, getConfigPath, getRunConfigPath, getUserConfigPath, getWorkDir } from '~~/app/constants/paths'
 import { appStorage, frpPackageStorage } from '~~/src/storages'
 
 export interface RawConfigSnapshot {
@@ -14,62 +14,102 @@ export interface RawConfigSnapshot {
 }
 
 let bridgeInstance: FrpBridge | null = null
+let cachedVersion: string | null = null
 
 export function useFrpBridge(): FrpBridge {
-  if (!bridgeInstance) {
+  const currentVersion = frpPackageStorage.version
+  // 版本变化时重新创建实例
+  if (!bridgeInstance || cachedVersion !== currentVersion) {
+    // 创建 bridge 前先生成运行配置文件
+    const runConfigPath = getRunConfigPath(getMode())
+    if (!existsSync(runConfigPath)) {
+      // 同步方式生成配置（在下一个事件循环）
+      setImmediate(() => {
+        generateFrpConfig(true).catch((err) => {
+          console.error('[bridge] Failed to generate config:', err)
+        })
+      })
+    }
     bridgeInstance = createBridge()
+    cachedVersion = currentVersion
   }
   return bridgeInstance
 }
 
 /**
- * 生成 FRP 配置文件（合并预设配置和用户 tunnels）
+ * 生成 FRP 配置文件（合并预设配置和用户配置）
  * @param force 是否强制重新生成
  */
 export async function generateFrpConfig(force = false): Promise<void> {
   const mode = getMode()
-  const configPath = getConfigPath(mode)
+  const runConfigPath = getRunConfigPath(mode)
 
-  // 如果配置文件已存在且不强制重新生成，则跳过
-  if (!force && existsSync(configPath)) {
+  // 如果运行配置文件已存在且不强制重新生成，则跳过
+  if (!force && existsSync(runConfigPath)) {
     return
   }
 
-  // 1. 读取预设配置
+  // 1. 读取预设配置（JSON 格式，从配置页面设置）
   const presetConfig = await loadPresetConfig(mode)
 
-  // 2. 读取用户 tunnels
+  // 2. 读取用户配置（TOML 格式，用户手动编辑的额外配置）
+  let userConfigToml = ''
+  const userConfigPath = getUserConfigPath(mode)
+  if (existsSync(userConfigPath)) {
+    const content = readFileSync(userConfigPath, 'utf-8')
+    // 排除空模板文件
+    if (content && !content.trim().startsWith('# User configuration')) {
+      userConfigToml = content
+    }
+  }
+
+  // 3. 读取 tunnels（从 bridge storage）
   const bridge = useFrpBridge()
   const processManager = bridge.getProcessManager()
   const tunnels = processManager.listTunnels()
+  const tunnelsConfig = generateTunnelsConfig(tunnels)
 
-  // 3. 生成用户配置 TOML（只包含 tunnels）
-  const userConfig = generateTunnelsConfig(tunnels)
+  // 4. 合并：预设配置 + 用户配置 + tunnels
+  const finalConfig = mergeConfigs(presetConfig, `${userConfigToml}\n${tunnelsConfig}`, mode === 'server' ? 'frps' : 'frpc')
 
-  // 4. 合并预设配置和用户配置
-  const finalConfig = mergeConfigs(presetConfig, userConfig, mode === 'server' ? 'frps' : 'frpc')
-
-  // 5. 写入最终配置文件
+  // 5. 写入运行配置文件（FRP 实际使用的）
   const { writeFileSync } = await import('node:fs')
   ensureDirectory(getConfigDir())
-  writeFileSync(configPath, finalConfig, 'utf-8')
+  writeFileSync(runConfigPath, finalConfig, 'utf-8')
 }
 
 /**
- * 读取预设配置
+ * 读取预设配置（从 .frp-web/config/ 目录）
  */
 async function loadPresetConfig(mode: RuntimeMode) {
-  const configDir = join(process.cwd(), 'data', 'config')
+  const configDir = getConfigDir()
   const presetType = mode === 'server' ? 'frps' : 'frpc'
   const presetPath = join(configDir, `${presetType}-preset.json`)
 
   if (!existsSync(presetPath)) {
+    // 返回默认配置
+    if (mode === 'server') {
+      return {
+        frps: {
+          bindPort: 7000,
+          dashboardPort: 7500,
+          dashboardUser: 'admin',
+          dashboardPassword: 'admin'
+        }
+      }
+    }
     return {}
   }
 
   try {
     const content = readFileSync(presetPath, 'utf-8')
     const config = JSON.parse(content)
+    // 修复空密码为默认值
+    if (mode === 'server' && config.frps) {
+      if (!config.frps.dashboardPassword) {
+        config.frps.dashboardPassword = 'admin'
+      }
+    }
     return { [presetType]: config }
   }
   catch {
@@ -125,13 +165,8 @@ export async function readConfigFileText(): Promise<RawConfigSnapshot> {
     await generateFrpConfig()
   }
 
-  // 如果还是不存在，尝试从下载的 FRP 包中复制默认配置
   if (!existsSync(configPath)) {
-    await copyDefaultConfigIfExists()
-  }
-
-  if (!existsSync(configPath)) {
-    throw new Error('FRP config file is missing and no default config found in downloaded package')
+    throw new Error('FRP config file does not exist')
   }
 
   const { readFileSync } = await import('node:fs')
@@ -161,16 +196,19 @@ export async function writeConfigFileText(content: string, restart = false): Pro
 function createBridge(): FrpBridge {
   const mode = getMode()
   const workDir = resolveWorkDir()
+  // 去掉 v 前缀，frp-bridge 期望纯版本号
+  const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
 
-  // 创建 bridge 实例
+  // 创建 bridge 实例，二进制文件在 bin/ 下
+  const runConfigPath = getRunConfigPath(mode)
   const bridge = new FrpBridge({
     mode,
     workDir,
     process: {
       mode,
       workDir,
-      // 使用已下载的 FRP 版本，避免启动时尝试获取最新版本
-      version: frpPackageStorage.version ?? undefined
+      version,
+      configPath: runConfigPath
     },
     // 注册自定义命令
     commands: {
@@ -194,7 +232,6 @@ function createBridge(): FrpBridge {
           if (wasRunning) {
             await processManager.stop()
             await processManager.start()
-            console.warn('FRP service restarted after config update')
 
             // 发出重启事件
             return {
@@ -232,7 +269,7 @@ function getMode(): RuntimeMode {
 function resolveWorkDir() {
   const workDir = getWorkDir()
   ensureDirectory(workDir)
-  ensureDirectory(getDataDir())
+  ensureDirectory(getBinDir())
   ensureDirectory(getConfigDir())
   return workDir
 }
@@ -248,49 +285,4 @@ function parseMode(mode?: string): RuntimeMode {
     return mode
   }
   return 'server'
-}
-
-/**
- * 尝试从下载的 FRP 包中复制默认配置文件
- * @returns 是否成功复制
- */
-async function copyDefaultConfigIfExists(): Promise<boolean> {
-  const mode = getMode()
-  const dataDir = getDataDir()
-  const targetConfigPath = getConfigPath(mode)
-
-  // 如果目标配置已存在，无需复制
-  if (existsSync(targetConfigPath)) {
-    return false
-  }
-
-  // 在 data 目录中查找解压的 FRP 包
-  if (!existsSync(dataDir)) {
-    return false
-  }
-
-  try {
-    const entries = readdirSync(dataDir, { withFileTypes: true })
-    const configFileName = mode === 'server' ? 'frps.toml' : 'frpc.toml'
-
-    // 查找 frp 开头的目录（解压后的目录通常是 frp_x.x.x_xxx）
-    for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith('frp')) {
-        const frpDir = join(dataDir, entry.name)
-        const sourceConfigPath = join(frpDir, configFileName)
-
-        // 如果找到默认配置文件，复制到配置目录
-        if (existsSync(sourceConfigPath)) {
-          copyFileSync(sourceConfigPath, targetConfigPath)
-          console.warn(`Copied default config from ${sourceConfigPath} to ${targetConfigPath}`)
-          return true
-        }
-      }
-    }
-  }
-  catch (error) {
-    console.error('Failed to copy default config:', error)
-  }
-
-  return false
 }

@@ -217,6 +217,7 @@ export const useConfigStore = defineStore('config', () => {
     }
     finally {
       frpPackageLoading.value = false
+      frpPackage.status = 'idle'
     }
   }
 

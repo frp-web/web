@@ -1,5 +1,4 @@
 import type { FrpPackageStatus } from '~~/src/storages/frp'
-import { resolve } from 'node:path'
 import process from 'node:process'
 import { createError, defineEventHandler, readBody } from 'h3'
 import { eventBus } from '~~/server/bridge'
@@ -110,17 +109,12 @@ export default defineEventHandler(async (event) => {
       message: `开始下载 ${latestVersion}...`
     })
 
-    // 下载并安装
-    const { getWorkDir, getConfigPath } = await import('~~/app/constants/paths')
-    const workDir = getWorkDir()
-
     sendProgress('downloading', {
       version: latestVersion,
       message: '正在下载...'
     })
 
-    const extractedDir = await downloadAndInstallFrp({
-      workDir,
+    await downloadAndInstallFrp({
       version: latestVersion,
       downloadUrl,
       onProgress: (progress) => {
@@ -138,55 +132,11 @@ export default defineEventHandler(async (event) => {
       message: '下载完成，正在配置...'
     })
 
-    // 复制配置文件
-    const { copyFile, access } = await import('node:fs/promises')
-    const { constants } = await import('node:fs')
-
-    async function copyModeConfigIfMissing(mode: 'client' | 'server') {
-      const fileName = mode === 'server' ? 'frps.toml' : 'frpc.toml'
-      const sourceConfig = resolve(extractedDir, fileName)
-      const targetConfig = getConfigPath(mode)
-      try {
-        await access(sourceConfig, constants.F_OK)
-      }
-      catch {
-        return
-      }
-      try {
-        await access(targetConfig, constants.F_OK)
-      }
-      catch {
-        await copyFile(sourceConfig, targetConfig)
-
-        if (mode === 'server') {
-          const { readFile, appendFile } = await import('node:fs/promises')
-          try {
-            const configContent = await readFile(targetConfig, 'utf-8')
-            if (!configContent.includes('webServer.addr')) {
-              const webServerConfig = '\n# webServer 配置 - 用于获取 FRPS 连接数据\n# 默认用户名: admin，密码: admin\nwebServer.addr = "127.0.0.1"\nwebServer.port = 7500\nwebServer.user = "admin"\nwebServer.password = "admin"\n'
-              await appendFile(targetConfig, webServerConfig)
-            }
-          }
-          catch {
-            // ignore
-          }
-        }
-      }
-    }
-
-    await Promise.all([
-      copyModeConfigIfMissing('client'),
-      copyModeConfigIfMissing('server')
-    ])
-
-    // 清理解压目录
-    const { rm } = await import('node:fs/promises')
-    await rm(extractedDir, { recursive: true, force: true })
-
     sendProgress('complete', {
       version: latestVersion,
       message: `FRP ${latestVersion} 安装完成`
     })
+    frpPackageStorage.status = 'idle'
   }
   catch (error) {
     frpPackageStorage.status = 'idle'

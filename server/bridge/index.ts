@@ -4,8 +4,8 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 import { FrpBridge, saveFrpConfigFile } from 'frp-bridge'
-import { getConfigDir, getConfigPath, getDataDir, getWorkDir } from '~~/app/constants/paths'
-import { appStorage } from '~~/src/storages'
+import { getBinDir, getConfigDir, getConfigPath, getWorkDir } from '~~/app/constants/paths'
+import { appStorage, frpPackageStorage } from '~~/src/storages'
 import { customCommands } from './commands'
 
 export interface RawConfigSnapshot {
@@ -212,16 +212,18 @@ export async function writeConfigFileText(content: string, restart = false): Pro
 function createBridge(): FrpBridge {
   const mode = getMode()
   const workDir = resolveWorkDir()
+  // 去掉 v 前缀，frp-bridge 期望纯版本号
+  const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
 
   // 创建 bridge 实例，注册自定义命令和事件监听
-
   const bridge = new FrpBridge({
     mode,
     workDir,
     configPath: getConfigPath(mode),
     process: {
       mode,
-      workDir
+      workDir,
+      version
     },
     // 注册所有自定义命令
     commands: customCommands,
@@ -245,7 +247,7 @@ function getMode(): RuntimeMode {
 function resolveWorkDir() {
   const workDir = getWorkDir()
   ensureDirectory(workDir)
-  ensureDirectory(getDataDir())
+  ensureDirectory(getBinDir())
   ensureDirectory(getConfigDir())
   return workDir
 }

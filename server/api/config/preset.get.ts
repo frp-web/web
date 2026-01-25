@@ -14,7 +14,7 @@ const DEFAULT_PRESETS = {
     vhostHTTPSPort: 443,
     dashboardPort: 7500,
     dashboardUser: 'admin',
-    dashboardPassword: '',
+    dashboardPassword: 'admin',
     authToken: '',
     domain: '',
     subdomainHost: ''

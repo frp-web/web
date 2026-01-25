@@ -38,7 +38,7 @@ export function getTempDir(): string {
  * 获取二进制文件目录
  */
 export function getBinDir(version?: string): string {
-  const baseDir = resolve(getDataDir(), 'bin')
+  const baseDir = resolve(getWorkDir(), 'bin')
   if (version) {
     const cleanVersion = version.replace(/^v/, '')
     return resolve(baseDir, cleanVersion)
@@ -52,6 +52,24 @@ export function getBinDir(version?: string): string {
  */
 export function getConfigPath(mode: 'server' | 'client'): string {
   const configFileName = mode === 'server' ? 'frps.toml' : 'frpc.toml'
+  return resolve(getConfigDir(), configFileName)
+}
+
+/**
+ * 获取用户配置文件路径（用户手动编辑的额外配置）
+ * @param mode - FRP 运行模式 (server/client)
+ */
+export function getUserConfigPath(mode: 'server' | 'client'): string {
+  const configFileName = mode === 'server' ? 'frps.user.toml' : 'frpc.user.toml'
+  return resolve(getConfigDir(), configFileName)
+}
+
+/**
+ * 获取运行配置文件路径（启动时生成的，FRP 实际使用的）
+ * @param mode - FRP 运行模式 (server/client)
+ */
+export function getRunConfigPath(mode: 'server' | 'client'): string {
+  const configFileName = mode === 'server' ? 'frps.run.toml' : 'frpc.run.toml'
   return resolve(getConfigDir(), configFileName)
 }
 
