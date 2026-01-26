@@ -66,7 +66,7 @@ export async function generateFrpConfig(force = false): Promise<void> {
   // 3. 读取 tunnels（从 bridge storage）
   const bridge = useFrpBridge()
   const processManager = bridge.getProcessManager()
-  const tunnels = processManager.listTunnels()
+  const tunnels = await processManager.listTunnels()
   const tunnelsConfig = generateTunnelsConfig(tunnels)
 
   // 4. 合并：预设配置 + 用户配置 + tunnels

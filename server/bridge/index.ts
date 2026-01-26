@@ -87,7 +87,7 @@ export async function generateFrpConfig(): Promise<void> {
   if (mode === 'client') {
     // client 模式：从 processManager 获取
     const processManager = bridge.getProcessManager()
-    tunnels = processManager.listTunnels()
+    tunnels = await processManager.listTunnels()
   }
   else {
     // server 模式：从配置文件读取或使用空数组
