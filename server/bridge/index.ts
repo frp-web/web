@@ -1,10 +1,9 @@
 import type { RuntimeMode } from 'frp-bridge/runtime'
 import { EventEmitter } from 'node:events'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import process from 'node:process'
 import { FrpBridge, saveFrpConfigFile } from 'frp-bridge'
-import { getBinDir, getConfigDir, getConfigPath, getWorkDir } from '~~/app/constants/paths'
+import { getBinDir, getConfigDir, getGeneratedConfigPath, getGeneratedDir, getPresetConfigPath, getWorkDir } from '~~/app/constants/paths'
 import { appStorage, frpPackageStorage } from '~~/src/storages'
 import { customCommands } from './commands'
 
@@ -70,12 +69,12 @@ export function useFrpBridge(): FrpBridge {
 }
 
 /**
- * 生成 FRP 配置文件（合并预设配置和用户 tunnels）
- * 每次调用都会重新生成并覆盖 configPath 下的配置文件
+ * 生成 FRP 配置文件（合并预设配置、用户额外配置和用户 tunnels）
+ * 每次调用都会重新生成并覆盖 generated 目录下的配置文件
  */
 export async function generateFrpConfig(): Promise<void> {
   const mode = getMode()
-  const configPath = getConfigPath(mode)
+  const configPath = getGeneratedConfigPath(mode)
 
   // 1. 读取预设配置
   const presetConfig = await loadPresetConfig(mode)
@@ -90,7 +89,7 @@ export async function generateFrpConfig(): Promise<void> {
     tunnels = await processManager.listTunnels()
   }
   else {
-    // server 模式：从配置文件读取或使用空数组
+    // server 模式：从生成的配置文件读取或使用空数组
     tunnels = await loadTunnelsFromConfig(configPath)
   }
 
@@ -156,27 +155,57 @@ async function loadTunnelsFromConfig(configPath: string): Promise<any[]> {
  * 读取预设配置
  */
 async function loadPresetConfig(mode: RuntimeMode) {
-  const configDir = getConfigDir()
-  const presetType = mode === 'server' ? 'frps' : 'frpc'
-  const presetPath = join(configDir, `${presetType}-preset.json`)
+  const presetPath = getPresetConfigPath(mode)
 
   if (!existsSync(presetPath)) {
-    return {}
+    // 返回默认配置
+    if (mode === 'server') {
+      return {
+        frps: {
+          bindPort: 7000,
+          vhostHTTPPort: 7000,
+          dashboardPort: 7500,
+          dashboardUser: 'admin',
+          dashboardPassword: 'admin'
+        }
+      }
+    }
+    return {
+      frpc: {
+        serverPort: 7000
+      }
+    }
   }
 
   try {
     const content = readFileSync(presetPath, 'utf-8')
     const config = JSON.parse(content)
-    return { [presetType]: config }
+    return { [mode === 'server' ? 'frps' : 'frpc']: config }
   }
   catch {
-    return {}
+    // 返回默认配置
+    if (mode === 'server') {
+      return {
+        frps: {
+          bindPort: 7000,
+          vhostHTTPPort: 7000,
+          dashboardPort: 7500,
+          dashboardUser: 'admin',
+          dashboardPassword: 'admin'
+        }
+      }
+    }
+    return {
+      frpc: {
+        serverPort: 7000
+      }
+    }
   }
 }
 
 export async function readConfigFileText(): Promise<RawConfigSnapshot> {
   const mode = getMode()
-  const configPath = getConfigPath(mode)
+  const configPath = getGeneratedConfigPath(mode)
 
   if (!existsSync(configPath)) {
     throw new Error('FRP config file not found, please start FRP service first')
@@ -196,7 +225,7 @@ export async function readConfigFileText(): Promise<RawConfigSnapshot> {
 export async function writeConfigFileText(content: string, restart = false): Promise<void> {
   const bridge = useFrpBridge()
   const mode = getMode()
-  const configPath = getConfigPath(mode)
+  const configPath = getGeneratedConfigPath(mode)
 
   // 直接使用 frp-bridge 内置的 config.applyRaw 命令
   await bridge.execute({
@@ -215,11 +244,11 @@ function createBridge(): FrpBridge {
   // 去掉 v 前缀，frp-bridge 期望纯版本号
   const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
 
-  // 创建 bridge 实例，注册自定义命令和事件监听
+  // 创建 bridge 实例，使用生成的配置文件路径
   const bridge = new FrpBridge({
     mode,
     workDir,
-    configPath: getConfigPath(mode),
+    configPath: getGeneratedConfigPath(mode),
     process: {
       mode,
       workDir,
@@ -249,6 +278,7 @@ function resolveWorkDir() {
   ensureDirectory(workDir)
   ensureDirectory(getBinDir())
   ensureDirectory(getConfigDir())
+  ensureDirectory(getGeneratedDir())
   return workDir
 }
 

@@ -71,11 +71,10 @@ interface ProxyTypeResponse extends FrpsApiResponse {
 }
 
 /**
- * 从配置文件中读取 webServer 配置
+ * 从预设配置中读取 dashboard 配置
  */
 export async function getFrpsApiConfig(): Promise<FrpsApiConfig | null> {
-  const { getConfigPath } = await import('~~/app/constants/paths')
-  const parseToml = await import('@iarna/toml')
+  const { getPresetConfigPath } = await import('~~/app/constants/paths')
   const { existsSync, readFileSync } = await import('node:fs')
   const process = await import('node:process')
 
@@ -84,32 +83,43 @@ export async function getFrpsApiConfig(): Promise<FrpsApiConfig | null> {
     return null
   }
 
-  const configPath = getConfigPath(mode)
+  const presetPath = getPresetConfigPath(mode)
 
-  if (!existsSync(configPath)) {
-    return null
+  if (!existsSync(presetPath)) {
+    // 返回默认配置
+    return {
+      addr: '0.0.0.0',
+      port: 7500,
+      user: 'admin',
+      password: 'admin'
+    }
   }
 
   try {
-    const content = readFileSync(configPath, 'utf-8')
-    const config = parseToml.default.parse(content)
+    const content = readFileSync(presetPath, 'utf-8')
+    const config = JSON.parse(content)
 
-    // 从配置中读取 webServer 设置
-    const webServer = (config as any).webServer
-    if (!webServer) {
-      return null
-    }
+    // 从预设配置中读取 dashboard 设置
+    const dashboardPort = config.dashboardPort || 7500
+    const dashboardUser = config.dashboardUser || 'admin'
+    const dashboardPassword = config.dashboardPassword || 'admin'
 
     return {
-      addr: webServer.addr || '127.0.0.1',
-      port: webServer.port || 7500,
-      user: webServer.user || 'admin',
-      password: webServer.password || 'admin'
+      addr: '0.0.0.0',
+      port: dashboardPort,
+      user: dashboardUser,
+      password: dashboardPassword
     }
   }
   catch (error) {
     console.error('Failed to read FRPS API config:', error)
-    return null
+    // 返回默认配置
+    return {
+      addr: '0.0.0.0',
+      port: 7500,
+      user: 'admin',
+      password: 'admin'
+    }
   }
 }
 

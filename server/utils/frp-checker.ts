@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { getBinaryPath, getConfigPath } from '~~/app/constants/paths'
+import { getBinaryPath, getGeneratedConfigPath } from '~~/app/constants/paths'
 import { appStorage } from '~~/src/storages'
 
 /**
@@ -25,7 +25,7 @@ export function checkFrpBinaryExists(version?: string): boolean {
  */
 export function checkFrpConfigExists(): boolean {
   const mode = appStorage.frpMode || 'server'
-  const configPath = getConfigPath(mode)
+  const configPath = getGeneratedConfigPath(mode)
 
   return existsSync(configPath)
 }

@@ -1,8 +1,7 @@
 import { defineEventHandler } from 'h3'
 
 export default defineEventHandler(async (event) => {
-  const { getConfigPath } = await import('~~/app/constants/paths')
-  const parseToml = await import('@iarna/toml')
+  const { getPresetConfigPath } = await import('~~/app/constants/paths')
   const { existsSync, readFileSync } = await import('node:fs')
   const { Buffer } = await import('node:buffer')
   const process = await import('node:process')
@@ -36,39 +35,34 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const configPath = getConfigPath(mode)
+  const presetPath = getPresetConfigPath(mode)
 
-  if (!existsSync(configPath)) {
-    return {
-      success: false,
-      error: 'Config file not found',
-      data: []
+  // 从预设配置读取 dashboard 设置
+  const addr = '0.0.0.0'
+  let port = 7500
+  let user = 'admin'
+  let password = 'admin'
+
+  if (existsSync(presetPath)) {
+    try {
+      const content = readFileSync(presetPath, 'utf-8')
+      const config = JSON.parse(content)
+
+      port = config.dashboardPort || 7500
+      user = config.dashboardUser || 'admin'
+      password = config.dashboardPassword || 'admin'
+    }
+    catch {
+      // 使用默认值
     }
   }
 
+  // 获取 Basic Auth 认证头
+  const credentials = `${user}:${password}`
+  const encoded = Buffer.from(credentials).toString('base64')
+  const authHeader = `Basic ${encoded}`
+
   try {
-    const content = readFileSync(configPath, 'utf-8')
-    const config = parseToml.default.parse(content)
-
-    const webServer = (config as any).webServer
-    if (!webServer) {
-      return {
-        success: false,
-        error: 'webServer config not found',
-        data: []
-      }
-    }
-
-    const addr = webServer.addr || '127.0.0.1'
-    const port = webServer.port || 7500
-    const user = webServer.user || 'admin'
-    const password = webServer.password || 'admin'
-
-    // 获取 Basic Auth 认证头
-    const credentials = `${user}:${password}`
-    const encoded = Buffer.from(credentials).toString('base64')
-    const authHeader = `Basic ${encoded}`
-
     // 调用 FRPS API
     const url = `http://${addr}:${port}/api/proxy/${proxyType}`
     const response = await fetch(url, {

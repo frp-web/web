@@ -3,7 +3,7 @@ import { chmod, copyFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import process from 'node:process'
 import { pipeline } from 'node:stream/promises'
-import { getBinDir, getConfigDir, getUserConfigPath } from '~~/app/constants/paths'
+import { getBinDir, getConfigDir } from '~~/app/constants/paths'
 
 interface DownloadOptions {
   version: string
@@ -74,18 +74,6 @@ export async function downloadAndInstallFrp(options: DownloadOptions): Promise<s
           // Windows 系统不支持 chmod，忽略错误
         }
       }
-    }
-  }
-
-  // 创建空白用户配置模板（如果不存在）
-  const userConfigTemplate = '# User configuration\n# Additional configurations can be added here. If duplicates with page configurations, they will be overridden.\n'
-  const serverUserConfigPath = getUserConfigPath('server')
-  const clientUserConfigPath = getUserConfigPath('client')
-  for (const targetConfig of [serverUserConfigPath, clientUserConfigPath]) {
-    // 只在目标文件不存在时创建模板
-    if (!existsSync(targetConfig)) {
-      const { writeFileSync } = await import('node:fs')
-      writeFileSync(targetConfig, userConfigTemplate, 'utf-8')
     }
   }
 

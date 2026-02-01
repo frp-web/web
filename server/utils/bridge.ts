@@ -1,10 +1,9 @@
 import type { RuntimeMode } from 'frp-bridge/runtime'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import process from 'node:process'
 import { FrpBridge, mergeConfigs } from 'frp-bridge'
 
-import { getBinDir, getConfigDir, getConfigPath, getRunConfigPath, getUserConfigPath, getWorkDir } from '~~/app/constants/paths'
+import { getBinDir, getConfigDir, getGeneratedConfigPath, getGeneratedDir, getPresetConfigPath, getUserConfigPath, getWorkDir } from '~~/app/constants/paths'
 import { appStorage, frpPackageStorage } from '~~/src/storages'
 
 export interface RawConfigSnapshot {
@@ -20,9 +19,9 @@ export function useFrpBridge(): FrpBridge {
   const currentVersion = frpPackageStorage.version
   // 版本变化时重新创建实例
   if (!bridgeInstance || cachedVersion !== currentVersion) {
-    // 创建 bridge 前先生成运行配置文件
-    const runConfigPath = getRunConfigPath(getMode())
-    if (!existsSync(runConfigPath)) {
+    // 创建 bridge 前先生成配置文件
+    const configPath = getGeneratedConfigPath(getMode())
+    if (!existsSync(configPath)) {
       // 同步方式生成配置（在下一个事件循环）
       setImmediate(() => {
         generateFrpConfig(true).catch((err) => {
@@ -37,22 +36,22 @@ export function useFrpBridge(): FrpBridge {
 }
 
 /**
- * 生成 FRP 配置文件（合并预设配置和用户配置）
+ * 生成 FRP 配置文件（合并预设配置、用户额外配置和 tunnels）
  * @param force 是否强制重新生成
  */
 export async function generateFrpConfig(force = false): Promise<void> {
   const mode = getMode()
-  const runConfigPath = getRunConfigPath(mode)
+  const configPath = getGeneratedConfigPath(mode)
 
-  // 如果运行配置文件已存在且不强制重新生成，则跳过
-  if (!force && existsSync(runConfigPath)) {
+  // 如果配置文件已存在且不强制重新生成，则跳过
+  if (!force && existsSync(configPath)) {
     return
   }
 
   // 1. 读取预设配置（JSON 格式，从配置页面设置）
   const presetConfig = await loadPresetConfig(mode)
 
-  // 2. 读取用户配置（TOML 格式，用户手动编辑的额外配置）
+  // 2. 读取用户额外配置（TOML 格式，用户手动编辑的）
   let userConfigToml = ''
   const userConfigPath = getUserConfigPath(mode)
   if (existsSync(userConfigPath)) {
@@ -69,22 +68,21 @@ export async function generateFrpConfig(force = false): Promise<void> {
   const tunnels = await processManager.listTunnels()
   const tunnelsConfig = generateTunnelsConfig(tunnels)
 
-  // 4. 合并：预设配置 + 用户配置 + tunnels
-  const finalConfig = mergeConfigs(presetConfig, `${userConfigToml}\n${tunnelsConfig}`, mode === 'server' ? 'frps' : 'frpc')
+  // 4. 合并：预设配置 + 用户额外配置 + tunnels
+  const combinedUserConfig = `${userConfigToml}\n${tunnelsConfig}`.trim()
+  const finalConfig = mergeConfigs(presetConfig, combinedUserConfig, mode === 'server' ? 'frps' : 'frpc')
 
-  // 5. 写入运行配置文件（FRP 实际使用的）
+  // 5. 写入生成的配置文件（FRP 实际使用的）
   const { writeFileSync } = await import('node:fs')
-  ensureDirectory(getConfigDir())
-  writeFileSync(runConfigPath, finalConfig, 'utf-8')
+  ensureDirectory(getGeneratedDir())
+  writeFileSync(configPath, finalConfig, 'utf-8')
 }
 
 /**
- * 读取预设配置（从 .frp-web/config/ 目录）
+ * 读取预设配置（从 preset.json 文件）
  */
 async function loadPresetConfig(mode: RuntimeMode) {
-  const configDir = getConfigDir()
-  const presetType = mode === 'server' ? 'frps' : 'frpc'
-  const presetPath = join(configDir, `${presetType}-preset.json`)
+  const presetPath = getPresetConfigPath(mode)
 
   if (!existsSync(presetPath)) {
     // 返回默认配置
@@ -92,13 +90,18 @@ async function loadPresetConfig(mode: RuntimeMode) {
       return {
         frps: {
           bindPort: 7000,
+          vhostHTTPPort: 7000,
           dashboardPort: 7500,
           dashboardUser: 'admin',
           dashboardPassword: 'admin'
         }
       }
     }
-    return {}
+    return {
+      frpc: {
+        serverPort: 7000
+      }
+    }
   }
 
   try {
@@ -110,10 +113,26 @@ async function loadPresetConfig(mode: RuntimeMode) {
         config.frps.dashboardPassword = 'admin'
       }
     }
+    const presetType = mode === 'server' ? 'frps' : 'frpc'
     return { [presetType]: config }
   }
   catch {
-    return {}
+    if (mode === 'server') {
+      return {
+        frps: {
+          bindPort: 7000,
+          vhostHTTPPort: 7000,
+          dashboardPort: 7500,
+          dashboardUser: 'admin',
+          dashboardPassword: 'admin'
+        }
+      }
+    }
+    return {
+      frpc: {
+        serverPort: 7000
+      }
+    }
   }
 }
 
@@ -158,7 +177,7 @@ function generateTunnelsConfig(tunnels: any[]): string {
 
 export async function readConfigFileText(): Promise<RawConfigSnapshot> {
   const mode = getMode()
-  const configPath = getConfigPath(mode)
+  const configPath = getGeneratedConfigPath(mode)
 
   // 如果配置文件不存在，生成配置
   if (!existsSync(configPath)) {
@@ -183,7 +202,7 @@ export async function readConfigFileText(): Promise<RawConfigSnapshot> {
 export async function writeConfigFileText(content: string, restart = false): Promise<void> {
   const bridge = useFrpBridge()
 
-  // 使用自定义命令 config.applyToFile，直接写入到 config 目录并可选重启
+  // 使用自定义命令 config.applyToFile，直接写入到 generated 目录并可选重启
   await bridge.execute({
     name: 'config.applyToFile',
     payload: {
@@ -199,8 +218,8 @@ function createBridge(): FrpBridge {
   // 去掉 v 前缀，frp-bridge 期望纯版本号
   const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
 
-  // 创建 bridge 实例，二进制文件在 bin/ 下
-  const runConfigPath = getRunConfigPath(mode)
+  // 创建 bridge 实例，使用生成的配置文件路径
+  const configPath = getGeneratedConfigPath(mode)
   const bridge = new FrpBridge({
     mode,
     workDir,
@@ -208,20 +227,20 @@ function createBridge(): FrpBridge {
       mode,
       workDir,
       version,
-      configPath: runConfigPath
+      configPath
     },
     // 注册自定义命令
     commands: {
-      // 自定义命令：写入配置文件到 config 目录并可选重启服务
+      // 自定义命令：写入配置文件到 generated 目录并可选重启服务
       'config.applyToFile': async (command, ctx) => {
         const { content, restart } = command.payload as { content: string, restart: boolean }
-        const configPath = getConfigPath(mode)
+        const configPath = getGeneratedConfigPath(mode)
         const { writeFileSync } = await import('node:fs')
 
         // 确保配置目录存在
-        ensureDirectory(getConfigDir())
+        ensureDirectory(getGeneratedDir())
 
-        // 写入配置文件到 config/ 目录
+        // 写入配置文件到 generated/ 目录
         writeFileSync(configPath, content, 'utf-8')
 
         // 如果需要重启服务
@@ -271,6 +290,7 @@ function resolveWorkDir() {
   ensureDirectory(workDir)
   ensureDirectory(getBinDir())
   ensureDirectory(getConfigDir())
+  ensureDirectory(getGeneratedDir())
   return workDir
 }
 
