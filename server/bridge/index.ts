@@ -6,6 +6,7 @@ import { FrpBridge, saveFrpConfigFile } from 'frp-bridge'
 import { getBinDir, getConfigDir, getGeneratedConfigPath, getGeneratedDir, getPresetConfigPath, getWorkDir } from '~~/app/constants/paths'
 import { appStorage, frpPackageStorage } from '~~/src/storages'
 import { customCommands } from './commands'
+import { nodeRegistry } from './node-registry'
 
 export interface RawConfigSnapshot {
   text: string
@@ -254,6 +255,16 @@ function createBridge(): FrpBridge {
       workDir,
       version
     },
+    // RPC 配置（server 模式）
+    rpc: mode === 'server'
+      ? {
+          serverPort: 9001, // WebSocket 服务端口
+          serverOnRegister: (nodeId, info) => {
+            // 节点注册时，记录到节点注册表
+            nodeRegistry.register(nodeId, info)
+          }
+        }
+      : undefined,
     // 注册所有自定义命令
     commands: customCommands,
     // 设置事件接收器，转发到全局事件总线

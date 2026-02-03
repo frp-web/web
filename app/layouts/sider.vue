@@ -5,6 +5,9 @@
         <NavMenuItem to="/">
           {{ $t('nav.dashboard') }}
         </NavMenuItem>
+        <NavMenuItem v-if="frpMode === 'server'" to="/node">
+          {{ $t('nav.node') }}
+        </NavMenuItem>
         <NavMenuItem v-if="frpMode === 'server'" to="/proxy">
           {{ $t('nav.proxy') }}
         </NavMenuItem>
