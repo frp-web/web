@@ -1,11 +1,11 @@
-import type { FrpPackageStatus } from '~~/src/storages/frp'
+import type { FrpPackageStatus } from '~~/app/stores/storages/frp'
 import process from 'node:process'
 import { createError, defineEventHandler, readBody } from 'h3'
+import { appStorage, frpPackageStorage } from '~~/app/stores/storages'
 import { eventBus } from '~~/server/bridge'
 import { checkFrpInstalled } from '~~/server/utils/frp-checker'
 import { downloadAndInstallFrp } from '~~/server/utils/frp-installer'
 import { toPercent } from '~~/server/utils/number'
-import { appStorage, frpPackageStorage } from '~~/src/storages'
 
 interface CheckVersionBody {
   checkOnly?: boolean // 只检查版本，不下载

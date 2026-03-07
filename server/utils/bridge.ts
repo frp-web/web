@@ -4,7 +4,7 @@ import process from 'node:process'
 import { FrpBridge, mergeConfigs } from 'frp-bridge'
 
 import { getBinDir, getConfigDir, getGeneratedConfigPath, getGeneratedDir, getPresetConfigPath, getUserConfigPath, getWorkDir } from '~~/app/constants/paths'
-import { appStorage, frpPackageStorage } from '~~/src/storages'
+import { appStorage, frpPackageStorage } from '~~/app/stores/storages'
 
 export interface RawConfigSnapshot {
   text: string

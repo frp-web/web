@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
+import { appStorage, frpPackageStorage } from '~~/app/stores/storages'
 import { checkFrpInstalled } from '~~/server/utils/frp-checker'
-import { appStorage, frpPackageStorage } from '~~/src/storages'
 
 export default defineEventHandler(() => {
   const installStatus = checkFrpInstalled(frpPackageStorage.version ?? undefined)

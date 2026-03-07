@@ -1,6 +1,6 @@
-import type { FrpMode, ThemeMode } from '~~/src/storages/app'
+import type { FrpMode, ThemeMode } from '~~/app/stores/storages/app'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { appStorage } from '~~/src/storages/app'
+import { appStorage } from '~~/app/stores/storages/app'
 
 interface UpdateAppSettingsBody {
   theme?: ThemeMode

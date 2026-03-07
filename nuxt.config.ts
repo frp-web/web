@@ -1,11 +1,8 @@
 import { fileURLToPath } from 'node:url'
-import lodashImports from 'lodash-imports'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 import component from 'unplugin-vue-components/vite'
 
 const r = (path: string) => fileURLToPath(new URL(path, import.meta.url))
-
-const lodash = lodashImports({ hasFrom: true })
 
 export default defineNuxtConfig({
   app: {
@@ -49,9 +46,6 @@ export default defineNuxtConfig({
   imports: {
     dirs: [
       'app/composables/**'
-    ],
-    imports: [
-      ...lodash.imports
     ]
   },
 

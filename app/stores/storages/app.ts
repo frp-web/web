@@ -1,5 +1,5 @@
-import { BaseStorage } from './base'
-import { useStorage } from './use-storage'
+import { BaseStorage } from '~/stores/storages/base'
+import { useStorage } from '~/stores/storages/use-storage'
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type FrpMode = 'client' | 'server'

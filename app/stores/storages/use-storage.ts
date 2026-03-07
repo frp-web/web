@@ -1,4 +1,4 @@
-import type { BaseStorage } from './base'
+import type { BaseStorage } from '~/stores/storages/base'
 
 interface StorageToken<T extends BaseStorage<any>> {
   prototype: T

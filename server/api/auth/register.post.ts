@@ -1,6 +1,6 @@
-import type { FrpMode } from '~~/src/storages/app'
+import type { FrpMode } from '~~/app/stores/storages/app'
 import { createHash } from 'node:crypto'
-import { appStorage } from '~~/src/storages'
+import { appStorage } from '~~/app/stores/storages'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ username: string, password: string, frpMode: FrpMode }>(event)

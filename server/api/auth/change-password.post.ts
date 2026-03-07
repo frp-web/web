@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { appStorage } from '~~/src/storages'
+import { appStorage } from '~~/app/stores/storages'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ newPassword: string }>(event)

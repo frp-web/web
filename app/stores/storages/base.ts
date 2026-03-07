@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
-import { debounce as _debounce, filter as _filter, kebabCase as _kebabCase, keys as _keys } from 'lodash-imports/lodash'
+import { debounce, filter, kebabCase, keys } from '~/utils/lodash'
 
 export abstract class BaseStorage<TSchema extends Record<string, any>> {
   private readonly _filePath: string
@@ -15,7 +15,7 @@ export abstract class BaseStorage<TSchema extends Record<string, any>> {
     const key = formatKey(this.constructor.name)
     const storageDir = resolveStorageDirectory()
     this._filePath = join(storageDir, `${key}.json`)
-    this._schedulePersist = _debounce(() => {
+    this._schedulePersist = debounce(() => {
       ensureDirectory(dirname(this._filePath))
       writeFileSync(this._filePath, JSON.stringify(this._cache, null, 2), 'utf8')
     }, 200)
@@ -75,14 +75,14 @@ export abstract class BaseStorage<TSchema extends Record<string, any>> {
 }
 
 function collectPublicFields(instance: Record<string, any>, reserved: Set<string>) {
-  return _filter(
-    _keys(instance),
+  return filter(
+    keys(instance),
     (key: string) => !reserved.has(key) && !key.startsWith('_') && typeof instance[key] !== 'function'
   )
 }
 
 function formatKey(name: string) {
-  return _kebabCase(name.replace(/Storage$/, ''))
+  return kebabCase(name.replace(/Storage$/, ''))
 }
 
 function resolveStorageDirectory() {

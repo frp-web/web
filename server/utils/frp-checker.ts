@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { getBinaryPath, getGeneratedConfigPath } from '~~/app/constants/paths'
-import { appStorage } from '~~/src/storages'
+import { appStorage } from '~~/app/stores/storages'
 
 /**
  * 检查 FRP 可执行文件是否存在

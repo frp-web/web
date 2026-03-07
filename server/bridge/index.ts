@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import process from 'node:process'
 import { FrpBridge, saveFrpConfigFile } from 'frp-bridge'
 import { getBinDir, getConfigDir, getGeneratedConfigPath, getGeneratedDir, getPresetConfigPath, getWorkDir } from '~~/app/constants/paths'
-import { appStorage, frpPackageStorage } from '~~/src/storages'
+import { appStorage, frpPackageStorage } from '~~/app/stores/storages'
 import { customCommands } from './commands'
 import { nodeRegistry } from './node-registry'
 

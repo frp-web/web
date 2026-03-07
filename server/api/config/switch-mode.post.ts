@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, readBody } from 'h3'
+import { appStorage } from '~~/app/stores/storages'
 import { useFrpBridge } from '~~/server/bridge'
-import { appStorage } from '~~/src/storages'
 
 interface SwitchModeBody {
   frpMode: 'client' | 'server'

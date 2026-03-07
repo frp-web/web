@@ -1,4 +1,4 @@
-import { appStorage } from '~~/src/storages'
+import { appStorage } from '~~/app/stores/storages'
 
 export default defineEventHandler(() => {
   const hasUser = Boolean(appStorage.username && appStorage.hashedPassword)
