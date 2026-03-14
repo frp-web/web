@@ -1,8 +1,12 @@
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 import component from 'unplugin-vue-components/vite'
 
 const r = (path: string) => fileURLToPath(new URL(path, import.meta.url))
+
+// 判断是否为开发环境
+const isDev = process.env.NODE_ENV !== 'production'
 
 export default defineNuxtConfig({
   app: {
@@ -68,7 +72,9 @@ export default defineNuxtConfig({
         'dayjs',
         'pinia',
         'vue',
-        'vue-router'
+        'vue-router',
+        '@vueuse/core',
+        '@vueuse/nuxt'
       ],
       exclude: ['@nuxtjs/i18n']
     },
@@ -81,9 +87,31 @@ export default defineNuxtConfig({
           '**/node_modules/**',
           '**/.nuxt/**',
           '**/dist/**',
-          '**/i18n/locales/**' // 翻译文件不需要热更新
+          '**/i18n/locales/**', // 翻译文件不需要热更新
+          '**/.frp-web/**' // FRP 工作目录不需要监听
         ]
+      },
+      // 增加 HMR 覆盖率限制
+      hmr: {
+        overlay: false
       }
+    },
+    // 构建优化
+    build: {
+      minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            antd: ['ant-design-vue'],
+            charts: ['@antv/g2'],
+            editor: ['monaco-editor', '@monaco-editor/loader']
+          }
+        }
+      }
+    },
+    // 预构建优化
+    esbuild: {
+      target: 'esnext'
     }
   },
 
@@ -102,10 +130,31 @@ export default defineNuxtConfig({
 
   // 实验性功能
   experimental: {
-    // 启用 Vite 5 的优化
-    typedPages: false
+    // 启用类型化页面以获得更好的 DX
+    typedPages: true
   },
 
   compatibilityDate: '2024-11-01',
-  devtools: { enabled: true }
+  devtools: { enabled: isDev },
+
+  // 开发环境性能优化
+  ...(isDev && {
+    // 开发时禁用源码生成以加快启动
+    sourcemap: {
+      server: false,
+      client: false
+    },
+    // 开发时减少构建开销
+    nitro: {
+      experimental: {
+        openAPI: false
+      }
+    }
+  }),
+
+  // 性能优化
+  features: {
+    // 禁用 inline 样式以提高 SSR 性能
+    inlineStyles: false
+  }
 })

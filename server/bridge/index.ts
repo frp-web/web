@@ -1,6 +1,7 @@
 import type { RuntimeMode } from 'frp-bridge/runtime'
 import { EventEmitter } from 'node:events'
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { FrpBridge, saveFrpConfigFile } from 'frp-bridge'
 import { getBinDir, getConfigDir, getGeneratedConfigPath, getGeneratedDir, getPresetConfigPath, getWorkDir } from '~~/app/constants/paths'
@@ -241,7 +242,7 @@ export async function writeConfigFileText(content: string, restart = false): Pro
 
 function createBridge(): FrpBridge {
   const mode = getMode()
-  const workDir = resolveWorkDir()
+  const workDir = getWorkDir() // 不等待，直接使用路径
   // 去掉 v 前缀，frp-bridge 期望纯版本号
   const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
 
@@ -273,6 +274,11 @@ function createBridge(): FrpBridge {
     }
   })
 
+  // 异步确保目录存在（不阻塞）
+  resolveWorkDir().catch((error) => {
+    console.error('[Bridge] Failed to ensure directories:', error)
+  })
+
   return bridge
 }
 
@@ -284,18 +290,18 @@ function getMode(): RuntimeMode {
   return parseMode(process.env.FRP_BRIDGE_MODE)
 }
 
-function resolveWorkDir() {
+async function resolveWorkDir() {
   const workDir = getWorkDir()
-  ensureDirectory(workDir)
-  ensureDirectory(getBinDir())
-  ensureDirectory(getConfigDir())
-  ensureDirectory(getGeneratedDir())
+  await ensureDirectory(workDir)
+  await ensureDirectory(getBinDir())
+  await ensureDirectory(getConfigDir())
+  await ensureDirectory(getGeneratedDir())
   return workDir
 }
 
-function ensureDirectory(pathname: string) {
+async function ensureDirectory(pathname: string) {
   if (!existsSync(pathname)) {
-    mkdirSync(pathname, { recursive: true })
+    await mkdir(pathname, { recursive: true })
   }
 }
 

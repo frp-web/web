@@ -100,19 +100,19 @@ export function getBinaryPath(mode: 'server' | 'client', version: string): strin
 }
 
 /**
- * 路径常量（只读）
+ * 路径常量（使用 getter 延迟计算，避免模块加载时执行）
  */
 export const PATHS = {
   /** 工作目录根路径 */
-  WORK_DIR: getWorkDir(),
+  get WORK_DIR() { return getWorkDir() },
   /** 用户配置文件目录 */
-  CONFIG_DIR: getConfigDir(),
+  get CONFIG_DIR() { return getConfigDir() },
   /** 运行时生成目录 */
-  GENERATED_DIR: getGeneratedDir(),
+  get GENERATED_DIR() { return getGeneratedDir() },
   /** 数据目录 */
-  DATA_DIR: getDataDir(),
+  get DATA_DIR() { return getDataDir() },
   /** 临时下载目录 */
-  TEMP_DIR: getTempDir(),
+  get TEMP_DIR() { return getTempDir() },
   /** 二进制文件基础目录 */
-  BIN_DIR: getBinDir()
+  get BIN_DIR() { return getBinDir() }
 } as const

@@ -24,9 +24,13 @@ const theme = computed<ConfigProviderProps['theme']>(() => {
 
 const authStore = useAuthStore()
 
-// 应用初始化
-onMounted(async () => {
-  await AppInitializer.init()
+// 应用初始化 - 延迟到下一个 tick，不阻塞渲染
+onMounted(() => {
+  nextTick(() => {
+    AppInitializer.init().catch((error) => {
+      console.error('[App] Initialization failed:', error)
+    })
+  })
 })
 
 // 应用清理
