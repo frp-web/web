@@ -32,8 +32,8 @@
     "vue-router": "^5.0.2"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^7.7.2",
     "@iarna/toml": "^2.2.5",
-    "@imba97/eslint-config": "^0.0.6",
     "@nuxtjs/color-mode": "^4.0.0",
     "@pinia/nuxt": "^0.11.3",
     "@types/fs-extra": "^11.0.4",
