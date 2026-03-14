@@ -34,7 +34,7 @@ class NodeRegistry {
   }
 
   getAll(): RegisteredNode[] {
-    return Array.from(this.nodes.values())
+    return [...this.nodes.values()]
   }
 
   get(nodeId: string): RegisteredNode | undefined {

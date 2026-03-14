@@ -43,13 +43,15 @@ export function getTempDir(): string {
   return resolve(getDataDir(), 'temp')
 }
 
+const VERSION_PREFIX_PATTERN = /^v/
+
 /**
  * 获取二进制文件目录
  */
 export function getBinDir(version?: string): string {
   const baseDir = resolve(getWorkDir(), 'bin')
   if (version) {
-    const cleanVersion = version.replace(/^v/, '')
+    const cleanVersion = version.replace(VERSION_PREFIX_PATTERN, '')
     return resolve(baseDir, cleanVersion)
   }
   return baseDir

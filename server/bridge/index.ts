@@ -9,6 +9,8 @@ import { appStorage, frpPackageStorage } from '~~/app/stores/storages'
 import { customCommands } from './commands'
 import { nodeRegistry } from './node-registry'
 
+const VERSION_PREFIX_PATTERN = /^v/
+
 export interface RawConfigSnapshot {
   text: string
   version: number
@@ -244,7 +246,7 @@ function createBridge(): FrpBridge {
   const mode = getMode()
   const workDir = getWorkDir() // 不等待，直接使用路径
   // 去掉 v 前缀，frp-bridge 期望纯版本号
-  const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
+  const version = frpPackageStorage.version?.replace(VERSION_PREFIX_PATTERN, '') || undefined
 
   // 创建 bridge 实例，使用生成的配置文件路径
   const bridge = new FrpBridge({

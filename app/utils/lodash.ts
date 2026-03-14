@@ -24,13 +24,16 @@ export function filter<T>(arr: T[], predicate: (item: T, index: number, array: T
   return result
 }
 
+const CAMEL_CASE_PATTERN = /([a-z])([A-Z])/g
+const SPACE_OR_UNDERSCORE_PATTERN = /[\s_]+/g
+
 /**
  * Convert string to kebab-case
  */
 export function kebabCase(str: string): string {
   return str
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/[\s_]+/g, '-')
+    .replace(CAMEL_CASE_PATTERN, '$1-$2')
+    .replace(SPACE_OR_UNDERSCORE_PATTERN, '-')
     .toLowerCase()
 }
 

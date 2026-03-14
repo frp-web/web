@@ -182,10 +182,12 @@ const typeOptions = [
   { label: 'SUDP', value: 'sudp' }
 ]
 
+const NAME_PATTERN = /^[\w-]+$/
+
 const rules = computed(() => ({
   name: [
     { required: true, message: t('tunnel.nameRequired'), trigger: 'blur' },
-    { pattern: /^[\w-]+$/, message: t('tunnel.namePattern'), trigger: 'blur' }
+    { pattern: NAME_PATTERN, message: t('tunnel.namePattern'), trigger: 'blur' }
   ],
   type: [
     { required: true, message: t('tunnel.typeRequired'), trigger: 'change' }

@@ -81,8 +81,10 @@ function collectPublicFields(instance: Record<string, any>, reserved: Set<string
   )
 }
 
+const STORAGE_SUFFIX_PATTERN = /Storage$/
+
 function formatKey(name: string) {
-  return kebabCase(name.replace(/Storage$/, ''))
+  return kebabCase(name.replace(STORAGE_SUFFIX_PATTERN, ''))
 }
 
 function resolveStorageDirectory() {

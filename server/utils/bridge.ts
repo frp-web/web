@@ -212,11 +212,13 @@ export async function writeConfigFileText(content: string, restart = false): Pro
   })
 }
 
+const VERSION_PREFIX_PATTERN = /^v/
+
 function createBridge(): FrpBridge {
   const mode = getMode()
   const workDir = resolveWorkDir()
   // 去掉 v 前缀，frp-bridge 期望纯版本号
-  const version = frpPackageStorage.version?.replace(/^v/, '') || undefined
+  const version = frpPackageStorage.version?.replace(VERSION_PREFIX_PATTERN, '') || undefined
 
   // 创建 bridge 实例，使用生成的配置文件路径
   const configPath = getGeneratedConfigPath(mode)

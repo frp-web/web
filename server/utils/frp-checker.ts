@@ -2,6 +2,8 @@ import { existsSync } from 'node:fs'
 import { getBinaryPath, getGeneratedConfigPath } from '~~/app/constants/paths'
 import { appStorage } from '~~/app/stores/storages'
 
+const EXE_PATTERN = /\.exe$/
+
 /**
  * 检查 FRP 可执行文件是否存在
  */
@@ -13,7 +15,7 @@ export function checkFrpBinaryExists(version?: string): boolean {
   }
 
   const binaryPath = getBinaryPath(mode, version)
-  const binaryPathWithoutExe = binaryPath.replace(/\.exe$/, '')
+  const binaryPathWithoutExe = binaryPath.replace(EXE_PATTERN, '')
   const binaryPathWithExe = `${binaryPathWithoutExe}.exe`
 
   // 检查两种可能的文件名
