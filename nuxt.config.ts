@@ -9,6 +9,11 @@ const r = (path: string) => fileURLToPath(new URL(path, import.meta.url))
 const isDev = process.env.NODE_ENV !== 'production'
 
 export default defineNuxtConfig({
+  // Nuxt 5 兼容模式
+  future: {
+    compatibilityVersion: 5
+  },
+
   app: {
     head: {
       title: 'FRP Web',
@@ -34,6 +39,7 @@ export default defineNuxtConfig({
     '@unocss/reset/tailwind-compat.css'
   ],
 
+  // @nuxtjs/color-mode 配置
   colorMode: {
     classSuffix: '',
     preference: 'light'
@@ -72,11 +78,10 @@ export default defineNuxtConfig({
         'dayjs',
         'pinia',
         'vue',
-        'vue-router',
         '@vueuse/core',
         '@vueuse/nuxt'
       ],
-      exclude: ['@nuxtjs/i18n']
+      exclude: ['@nuxtjs/i18n', 'vue-router']
     },
     // 开发服务器配置
     server: {
@@ -99,17 +104,20 @@ export default defineNuxtConfig({
     // 构建优化
     build: {
       minify: 'esbuild',
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          manualChunks: {
-            antd: ['ant-design-vue'],
-            charts: ['@antv/g2'],
-            editor: ['monaco-editor', '@monaco-editor/loader']
+          manualChunks(id) {
+            if (id.includes('ant-design-vue'))
+              return 'antd'
+            if (id.includes('@antv/g2'))
+              return 'charts'
+            if (id.includes('monaco-editor'))
+              return 'editor'
           }
         }
       }
     },
-    // 预构建优化
+    // 预构建优化（Vite 8 准备: esbuild -> oxc）
     esbuild: {
       target: 'esnext'
     }
@@ -130,8 +138,8 @@ export default defineNuxtConfig({
 
   // 实验性功能
   experimental: {
-    // 启用类型化页面以获得更好的 DX
-    typedPages: true
+    // Nuxt 5: callHook 不总是返回 Promise（性能优化）
+    asyncCallHook: false
   },
 
   compatibilityDate: '2024-11-01',
