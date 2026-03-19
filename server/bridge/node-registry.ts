@@ -1,6 +1,6 @@
-import type { NodeInfo } from 'frp-bridge/types'
+import type { ServerNodeInfo } from 'frp-bridge'
 
-interface RegisteredNode extends NodeInfo {
+interface RegisteredNode extends ServerNodeInfo {
   lastSeen: number
   connectedAt: number
 }
@@ -12,7 +12,7 @@ interface RegisteredNode extends NodeInfo {
 class NodeRegistry {
   private readonly nodes = new Map<string, RegisteredNode>()
 
-  register(nodeId: string, info: NodeInfo): void {
+  register(nodeId: string, info: ServerNodeInfo): void {
     const existing = this.nodes.get(nodeId)
     const now = Date.now()
 

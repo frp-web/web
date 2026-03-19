@@ -1,5 +1,20 @@
+import type { ProcessEvent, ProcessEventType } from 'frp-bridge'
 import { defineEventHandler } from 'h3'
 import { eventBus, useFrpBridge } from '~~/server/bridge'
+
+// Frontend expects running at top level, not in payload
+interface StatusEvent {
+  type: 'status' | ProcessEventType
+  timestamp: number
+  running: boolean
+  payload?: {
+    pid?: number
+    uptime?: number
+    code?: number
+    signal?: string
+    error?: string
+  }
+}
 
 export default defineEventHandler(async (event) => {
   // SSE 流式响应
@@ -13,37 +28,43 @@ export default defineEventHandler(async (event) => {
     const isRunning = processManager.isRunning()
 
     // 使用 queryProcess API 获取进程信息
-    let initialPayload: any = {}
+    let pid: number | undefined
+    let uptime = 0
     if (isRunning) {
       try {
         const processInfo = processManager.queryProcess()
-        initialPayload = {
-          pid: processInfo.pid,
-          uptime: processInfo.uptime
-        }
+        pid = processInfo.pid
+        uptime = processInfo.uptime
       }
-      catch (error) {
-        console.warn('Failed to query process info:', error)
+      catch {
+        // Ignore error, use default values
       }
     }
 
-    // 发送初始状态事件
-    const initialEvent = {
+    // 发送初始状态事件（running 在顶层）
+    const initialEvent: StatusEvent = {
       type: 'status',
       running: isRunning,
       timestamp: Date.now(),
-      payload: initialPayload
+      payload: { pid, uptime }
     }
 
     stream.push(JSON.stringify(initialEvent))
 
-    // 监听所有事件变化（通用事件处理器）
-    const handler = (frpEvent: any) => {
-      try {
-        stream.push(JSON.stringify(frpEvent))
+    // 监听所有事件变化，转换为 frontend 格式
+    const handler = (frpEvent: ProcessEvent) => {
+      // 转换为 frontend 期望的格式（running 在顶层）
+      const statusEvent: StatusEvent = {
+        type: frpEvent.type,
+        running: frpEvent.payload?.running ?? frpEvent.type === 'process:started',
+        timestamp: frpEvent.timestamp,
+        payload: frpEvent.payload
       }
-      catch (error) {
-        console.error('Error handling SSE event:', error)
+      try {
+        stream.push(JSON.stringify(statusEvent))
+      }
+      catch {
+        // Stream closed, ignore
       }
     }
 
@@ -63,12 +84,17 @@ export default defineEventHandler(async (event) => {
     const processManager = bridge.getProcessManager()
     const isRunning = processManager.isRunning()
 
+    const processInfo = processManager.queryProcess()
+
     return {
       running: isRunning,
-      status: isRunning ? 'running' : 'stopped'
+      status: isRunning ? 'running' : 'stopped',
+      pid: processInfo.pid,
+      uptime: processInfo.uptime
     }
   }
   catch (error) {
+    console.error('[Status API] Error:', error)
     return {
       running: false,
       status: 'stopped',

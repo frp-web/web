@@ -1,6 +1,15 @@
-import type { RpcCommandStatus } from 'frp-bridge/rpc'
 import { useFrpBridge } from '~~/server/bridge'
 import { nodeRegistry } from '~~/server/bridge/node-registry'
+
+interface RpcCommandStatus {
+  commandId: string
+  nodeId: string
+  action: string
+  status: 'pending' | 'completed' | 'failed'
+  result?: unknown
+  error?: string
+  timestamp: number
+}
 
 export default defineEventHandler(async () => {
   try {
