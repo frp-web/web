@@ -7,6 +7,7 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
+    "cleanup": "nuxt cleanup",
     "preview": "nuxt preview",
     "start-docker": "nuxt start --hostname 0.0.0.0",
     "release": "bumpp",
