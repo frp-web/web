@@ -13,10 +13,13 @@ export default defineEventHandler(async () => {
         success: true,
         message: 'FRP service is already running',
         status: 'running',
-        data: {
-          pid: processInfo.pid,
-          uptime: processInfo.uptime
-        }
+        data: processInfo
+          ? {
+              pid: processInfo.pid,
+              uptime: processInfo.uptime,
+              startTime: processInfo.startTime
+            }
+          : undefined
       }
     }
 
@@ -33,10 +36,13 @@ export default defineEventHandler(async () => {
       success: true,
       message: 'FRP service started successfully',
       status: 'running',
-      data: {
-        pid: processInfo.pid,
-        uptime: processInfo.uptime
-      }
+      data: processInfo
+        ? {
+            pid: processInfo.pid,
+            uptime: processInfo.uptime,
+            startTime: processInfo.startTime
+          }
+        : undefined
     }
   }
   catch (error) {

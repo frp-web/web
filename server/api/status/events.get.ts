@@ -10,6 +10,7 @@ interface StatusEvent {
   payload?: {
     pid?: number
     uptime?: number
+    startTime?: number
     code?: number
     signal?: string
     error?: string
@@ -28,25 +29,20 @@ export default defineEventHandler(async (event) => {
     const isRunning = processManager.isRunning()
 
     // 使用 queryProcess API 获取进程信息
-    let pid: number | undefined
-    let uptime = 0
-    if (isRunning) {
-      try {
-        const processInfo = processManager.queryProcess()
-        pid = processInfo.pid
-        uptime = processInfo.uptime
-      }
-      catch {
-        // Ignore error, use default values
-      }
-    }
+    const processInfo = isRunning ? processManager.queryProcess() : null
 
     // 发送初始状态事件（running 在顶层）
     const initialEvent: StatusEvent = {
       type: 'status',
       running: isRunning,
       timestamp: Date.now(),
-      payload: { pid, uptime }
+      payload: processInfo
+        ? {
+            pid: processInfo.pid,
+            uptime: processInfo.uptime,
+            startTime: processInfo.startTime
+          }
+        : undefined
     }
 
     stream.push(JSON.stringify(initialEvent))
@@ -89,8 +85,9 @@ export default defineEventHandler(async (event) => {
     return {
       running: isRunning,
       status: isRunning ? 'running' : 'stopped',
-      pid: processInfo.pid,
-      uptime: processInfo.uptime
+      pid: processInfo?.pid,
+      uptime: processInfo?.uptime,
+      startTime: processInfo?.startTime
     }
   }
   catch (error) {

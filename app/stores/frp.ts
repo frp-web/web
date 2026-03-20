@@ -51,15 +51,12 @@ export const useFrpStore = defineStore('frp', () => {
   })
 
   // 启动运行时间计时器
-  function startUptimeTimer() {
+  function startUptimeTimer(startTime: number) {
     stopUptimeTimer()
-    // 记录启动计时器时的时间戳和初始 uptime
-    const startTimerAt = Date.now()
-    const initialUptime = currentUptime.value
 
     // 启动计时器每秒更新运行时间
     uptimeTimer = setInterval(() => {
-      currentUptime.value = initialUptime + (Date.now() - startTimerAt)
+      currentUptime.value = Date.now() - startTime
     }, 1000)
   }
 
@@ -89,16 +86,15 @@ export const useFrpStore = defineStore('frp', () => {
           case 'process:restart':
             isRunning.value = data.running
             // 从 payload 中提取进程信息
-            if (data.payload?.pid) {
-              const uptime = data.payload.uptime || 0
+            if (data.payload?.pid && data.payload?.startTime) {
               processInfo.value = {
                 pid: data.payload.pid,
-                uptime,
-                startTime: data.timestamp
+                uptime: data.payload.uptime,
+                startTime: data.payload.startTime
               }
-              currentUptime.value = uptime || Date.now() - data.timestamp
+              currentUptime.value = Date.now() - data.payload.startTime
               // 启动 uptime 计时器以保持时间更新
-              startUptimeTimer()
+              startUptimeTimer(data.payload.startTime)
             }
             break
           case 'process:stopped':
@@ -204,19 +200,18 @@ export const useFrpStore = defineStore('frp', () => {
   async function startFrp() {
     try {
       // 调用实际的启动 API
-      const result = await $fetch<{ success: boolean, status: string, data?: { pid?: number, uptime?: number } }>('/api/commands/start', { method: 'POST' })
+      const result = await $fetch<{ success: boolean, status: string, data?: { pid?: number, uptime?: number, startTime?: number } }>('/api/commands/start', { method: 'POST' })
 
       // 立即更新状态，使用 API 返回的数据
-      if (result.success && result.data?.pid) {
+      if (result.success && result.data?.pid && result.data?.startTime) {
         isRunning.value = true
-        const uptime = result.data.uptime || 0
         processInfo.value = {
           pid: result.data.pid,
-          uptime,
-          startTime: Date.now()
+          uptime: result.data.uptime,
+          startTime: result.data.startTime
         }
-        currentUptime.value = uptime
-        startUptimeTimer()
+        currentUptime.value = Date.now() - result.data.startTime
+        startUptimeTimer(result.data.startTime)
       }
     }
     catch (error) {
