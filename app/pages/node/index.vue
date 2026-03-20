@@ -377,8 +377,7 @@ async function handleSync(node: NodeInfo) {
 
 // 查看详情
 function handleViewDetail(node: NodeInfo) {
-  selectedNodeId.value = node.id
-  detailDrawerVisible.value = true
+  router.push(`/node/${node.clientID || node.id}`)
 }
 
 // 同步所有节点

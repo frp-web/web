@@ -1,17 +1,52 @@
-import { defineEventHandler } from 'h3'
+import { Buffer } from 'node:buffer'
+import { existsSync, readFileSync } from 'node:fs'
+import { getPresetConfigPath } from '~~/app/constants/paths'
+import { appStorage } from '~~/app/stores/storages'
+import { useFrpBridge } from '~~/server/bridge'
+
+interface FrpsProxy {
+  name: string
+  conf: {
+    name: string
+    type: string
+    localIP: string
+    localPort?: number
+    remotePort?: number
+    [key: string]: any
+  }
+  clientID: string
+  clientVersion: string
+  todayTrafficIn: number
+  todayTrafficOut: number
+  curConns: number
+  lastStartTime: string
+  lastCloseTime: string
+  status: string
+}
+
+interface FrpsProxyResponse {
+  proxies: FrpsProxy[]
+}
 
 export default defineEventHandler(async (event) => {
-  const { getPresetConfigPath } = await import('~~/app/constants/paths')
-  const { existsSync, readFileSync } = await import('node:fs')
-  const { Buffer } = await import('node:buffer')
-  const process = await import('node:process')
+  const mode = appStorage.frpMode || 'server'
 
-  const mode = process.env.FRP_BRIDGE_MODE as 'server' | 'client'
   if (mode !== 'server') {
     return {
       success: false,
       error: 'Not in server mode',
       data: []
+    }
+  }
+
+  // 检查 frps 是否运行
+  const bridge = useFrpBridge()
+  const processManager = bridge.getProcessManager()
+  if (!processManager.isRunning()) {
+    return {
+      success: true,
+      data: [],
+      message: 'FRP service is not running'
     }
   }
 
@@ -26,7 +61,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 验证类型是否有效
-  const validTypes = ['tcp', 'udp', 'http', 'https', 'stcp', 'xtcp']
+  const validTypes = ['tcp', 'udp', 'http', 'https', 'stcp', 'xtcp', 'sudp', 'tcpmux']
   if (!validTypes.includes(proxyType)) {
     return {
       success: false,
@@ -38,7 +73,6 @@ export default defineEventHandler(async (event) => {
   const presetPath = getPresetConfigPath(mode)
 
   // 从预设配置读取 dashboard 设置
-  const addr = '0.0.0.0'
   let port = 7500
   let user = 'admin'
   let password = 'admin'
@@ -57,33 +91,22 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 获取 Basic Auth 认证头
-  const credentials = `${user}:${password}`
-  const encoded = Buffer.from(credentials).toString('base64')
-  const authHeader = `Basic ${encoded}`
-
   try {
     // 调用 FRPS API
-    const url = `http://${addr}:${port}/api/proxy/${proxyType}`
-    const response = await fetch(url, {
+    const auth = Buffer.from(`${user}:${password}`).toString('base64')
+    const response = await fetch(`http://127.0.0.1:${port}/api/proxy/${proxyType}`, {
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
+        Authorization: `Basic ${auth}`
       }
     })
 
     if (!response.ok) {
-      console.error(`FRPS API error: ${response.status} ${response.statusText}`)
-      return {
-        success: false,
-        error: `FRPS API error: ${response.status}`,
-        data: []
-      }
+      throw new Error(`FRPS API error: ${response.status} ${response.statusText}`)
     }
 
-    const result = await response.json()
+    const result = await response.json() as FrpsProxyResponse
 
-    if (!result.proxies) {
+    if (!result.proxies || result.proxies.length === 0) {
       return {
         success: true,
         data: []
@@ -91,19 +114,20 @@ export default defineEventHandler(async (event) => {
     }
 
     // 格式化数据
-    const formattedData = result.proxies.map((proxy: any) => ({
-      name: proxy.name || proxy.conf?.name || '',
+    const formattedData = result.proxies.map(proxy => ({
+      name: proxy.name,
       type: proxyType,
       remotePort: proxy.conf?.remotePort || 0,
       localPort: proxy.conf?.localPort || 0,
       localIP: proxy.conf?.localIP || '127.0.0.1',
-      conns: proxy.curConns || proxy.conns || 0,
-      trafficIn: proxy.todayTrafficIn || proxy.trafficIn || 0,
-      trafficOut: proxy.todayTrafficOut || proxy.trafficOut || 0,
-      status: proxy.status || 'unknown',
-      clientVersion: proxy.clientVersion || '',
-      lastStartTime: proxy.lastStartTime || '',
-      lastCloseTime: proxy.lastCloseTime || '',
+      curConns: proxy.curConns,
+      todayTrafficIn: proxy.todayTrafficIn,
+      todayTrafficOut: proxy.todayTrafficOut,
+      status: proxy.status,
+      clientID: proxy.clientID,
+      clientVersion: proxy.clientVersion,
+      lastStartTime: proxy.lastStartTime,
+      lastCloseTime: proxy.lastCloseTime,
       conf: proxy.conf
     }))
 
@@ -113,11 +137,12 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
-    console.error('Failed to get proxy list:', error)
+    console.error('[API] proxy.list error:', error)
+    // 返回空数据而不是错误
     return {
-      success: false,
-      error: 'Failed to get proxy list',
-      data: []
+      success: true,
+      data: [],
+      message: 'Failed to fetch proxies, service may not be running'
     }
   }
 })
