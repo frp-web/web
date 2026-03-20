@@ -23,8 +23,7 @@ const DEFAULT_PRESETS = {
     serverAddr: '127.0.0.1',
     serverPort: 7000,
     authToken: '',
-    user: '',
-    heartbeatInterval: 30
+    user: ''
   }
 }
 

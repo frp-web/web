@@ -48,20 +48,6 @@
           客户端标识名称，方便在服务器端区分
         </div>
       </AntFormItem>
-
-      <AntFormItem label="心跳间隔">
-        <AntInputNumber
-          :value="modelValue?.heartbeatInterval ?? 30"
-          :min="1"
-          :max="300"
-          w-full
-          placeholder="秒"
-          @update:value="updateValue('heartbeatInterval', $event)"
-        />
-        <div mt-1 text-xs text-gray-500>
-          向服务器发送心跳的时间间隔（秒），默认 30
-        </div>
-      </AntFormItem>
     </AntForm>
   </div>
 </template>
@@ -72,7 +58,6 @@ interface FrpcConfig {
   serverPort?: number
   authToken?: string
   user?: string
-  heartbeatInterval?: number
 }
 
 interface Props {

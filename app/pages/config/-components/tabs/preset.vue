@@ -44,7 +44,6 @@ interface FrpcConfig {
   serverPort?: number
   authToken?: string
   user?: string
-  heartbeatInterval?: number
 }
 
 const saving = ref(false)
