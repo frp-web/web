@@ -33,7 +33,7 @@
             :title="$t('node.offlineNodes')"
             :value="nodeStore.nodeStats.offline"
             :value-style="{ color: '#d9d9d9' }"
-            :prefix="h('i', { class: 'i-carbon-circle-outline' })"
+            :prefix="h('i', { class: 'i-octicon-cloud-offline-16' })"
           />
         </AntCard>
       </AntCol>
@@ -149,52 +149,13 @@
 
               <!-- 操作 -->
               <template v-else-if="column.key === 'actions'">
-                <AntSpace>
-                  <AntButton
-                    type="link"
-                    size="small"
-                    :disabled="!isNodeOnline(record)"
-                    @click="handleSync(record)"
-                  >
-                    {{ $t('node.sync') }}
-                  </AntButton>
-                  <AntButton
-                    type="link"
-                    size="small"
-                    @click="handleViewDetail(record)"
-                  >
-                    {{ $t('common.detail') }}
-                  </AntButton>
-                  <AntDropdown>
-                    <template #overlay>
-                      <AntMenu>
-                        <AntMenuItem
-                          :disabled="!isNodeOnline(record)"
-                          @click="handleManageTunnel(record)"
-                        >
-                          <template #icon>
-                            <i class="i-carbon-network-2" />
-                          </template>
-                          {{ $t('node.manageTunnel') }}
-                        </AntMenuItem>
-                        <AntMenuItem
-                          danger
-                          @click="handleDelete(record)"
-                        >
-                          <template #icon>
-                            <i class="i-carbon-trash-can" />
-                          </template>
-                          {{ $t('common.delete') }}
-                        </AntMenuItem>
-                      </AntMenu>
-                    </template>
-                    <AntButton type="link" size="small">
-                      <template #icon>
-                        <i class="i-carbon-overflow-menu-horizontal" />
-                      </template>
-                    </AntButton>
-                  </AntDropdown>
-                </AntSpace>
+                <AntButton
+                  type="link"
+                  size="small"
+                  @click="handleViewDetail(record)"
+                >
+                  {{ $t('common.detail') }}
+                </AntButton>
               </template>
             </template>
           </AntTable>
@@ -207,17 +168,6 @@
       v-model:open="detailDrawerVisible"
       :node-id="selectedNodeId"
     />
-
-    <!-- 删除确认对话框 -->
-    <AntModal
-      v-model:open="deleteConfirmVisible"
-      :title="$t('node.deleteConfirm')"
-      :confirm-loading="deleting"
-      @ok="confirmDelete"
-      @cancel="deleteConfirmVisible = false"
-    >
-      <p>{{ deleteConfirmMessage }}</p>
-    </AntModal>
   </div>
 </template>
 
@@ -225,6 +175,7 @@
 import type { TableColumnType } from 'ant-design-vue'
 import type { NodeInfo } from '~/stores/node'
 import { message } from 'ant-design-vue'
+import { h } from 'vue'
 import { useNodeStore } from '~/stores/node'
 
 const { t } = useI18n()
@@ -233,15 +184,12 @@ const router = useRouter()
 
 // 对话框状态
 const detailDrawerVisible = ref(false)
-const deleteConfirmVisible = ref(false)
 
 // 操作状态
 const refreshing = ref(false)
-const deleting = ref(false)
 
 // 选中的节点
 const selectedNodeId = ref<string>()
-const nodeToDelete = ref<NodeInfo>()
 
 // 分页配置
 const pagination = reactive({
@@ -293,18 +241,8 @@ const columns: TableColumnType<NodeInfo>[] = [
   }
 ]
 
-// 删除确认消息
-const deleteConfirmMessage = computed(() => {
-  if (nodeToDelete.value) {
-    return t('node.deleteConfirmMessage', {
-      name: nodeToDelete.value.hostname || nodeToDelete.value.id
-    })
-  }
-  return ''
-})
-
 // 获取在线指示器样式
-function getOnlineIndicatorClass(node: NodeInfo) {
+function getOnlineIndicatorClass(node: Record<string, any>) {
   if (node.isOnline || node.hasActiveConnection) {
     return 'bg-success'
   }
@@ -318,7 +256,7 @@ function getOnlineIndicatorClass(node: NodeInfo) {
 }
 
 // 获取状态颜色
-function getStatusColor(node: NodeInfo) {
+function getStatusColor(node: Record<string, any>) {
   if (node.isOnline || node.hasActiveConnection) {
     return 'success'
   }
@@ -332,16 +270,11 @@ function getStatusColor(node: NodeInfo) {
 }
 
 // 获取状态 key
-function getStatusKey(node: NodeInfo) {
+function getStatusKey(node: Record<string, any>) {
   if (node.isOnline || node.hasActiveConnection) {
     return 'online'
   }
   return node.status
-}
-
-// 检查节点是否在线
-function isNodeOnline(node: NodeInfo) {
-  return nodeStore.isNodeOnline(node.id)
 }
 
 // 格式化时间
@@ -364,63 +297,9 @@ async function handleRefresh() {
   }
 }
 
-// 同步节点
-async function handleSync(node: NodeInfo) {
-  try {
-    const result = await nodeStore.syncNodes(node.id)
-    message.success(result.message || t('node.syncSuccess'))
-  }
-  catch {
-    message.error(t('node.syncFailed'))
-  }
-}
-
 // 查看详情
-function handleViewDetail(node: NodeInfo) {
+function handleViewDetail(node: Record<string, any>) {
   router.push(`/node/${node.clientID || node.id}`)
-}
-
-// 同步所有节点
-async function _handleSyncAll() {
-  try {
-    const result = await nodeStore.syncNodes()
-    message.success(result.message || t('node.syncAllSuccess'))
-  }
-  catch {
-    message.error(t('node.syncAllFailed'))
-  }
-}
-
-// 管理隧道
-function handleManageTunnel(node: NodeInfo) {
-  router.push(`/node/${node.id}/tunnel`)
-}
-
-// 显示删除确认
-function handleDelete(node: NodeInfo) {
-  nodeToDelete.value = node
-  deleteConfirmVisible.value = true
-}
-
-// 确认删除
-async function confirmDelete() {
-  if (!nodeToDelete.value)
-    return
-
-  deleting.value = true
-  try {
-    // 使用节点的 id 作为 nodeId，使用 hostname 或 id 作为 targetName
-    await nodeStore.deleteNode(nodeToDelete.value.id, nodeToDelete.value.hostname || nodeToDelete.value.id)
-    message.success(t('node.deleteSuccess'))
-    deleteConfirmVisible.value = false
-    nodeToDelete.value = undefined
-  }
-  catch {
-    message.error(t('node.deleteFailed'))
-  }
-  finally {
-    deleting.value = false
-  }
 }
 
 // 页面加载时获取节点列表
