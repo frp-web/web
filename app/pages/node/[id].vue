@@ -21,7 +21,7 @@
     <AntCard v-if="nodeInfo" m-b-4>
       <div grid grid-cols="[repeat(auto-fit,minmax(200px,1fr))]" gap-4 items-center>
         <div fyc gap-2>
-          <span text-sm color-secondary whitespace-nowrap>{{ $t('node.status') }}</span>
+          <span text-sm color-secondary whitespace-nowrap>{{ $t('common.status') }}</span>
           <AntTag :color="nodeInfo.online ? 'success' : 'default'">
             {{ $t(nodeInfo.online ? 'node.status.online' : 'node.status.offline') }}
           </AntTag>
@@ -156,7 +156,7 @@
         <AntDescriptionsItem :label="$t('node.clientIP')">
           {{ nodeInfo.clientIP }}
         </AntDescriptionsItem>
-        <AntDescriptionsItem :label="$t('node.status')">
+        <AntDescriptionsItem :label="$t('common.status')">
           <AntTag :color="nodeInfo.online ? 'success' : 'default'">
             {{ $t(nodeInfo.online ? 'node.status.online' : 'node.status.offline') }}
           </AntTag>
