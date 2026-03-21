@@ -43,19 +43,19 @@
           </template>
 
           <!-- frps 模式：显示连接数 -->
-          <template v-else-if="column.key === 'conns'">
-            <AntTag :color="record.conns && record.conns > 0 ? 'green' : 'default'">
-              {{ record.conns || 0 }}
+          <template v-else-if="column.key === 'curConns'">
+            <AntTag :color="record.curConns && record.curConns > 0 ? 'green' : 'default'">
+              {{ record.curConns || 0 }}
             </AntTag>
           </template>
 
           <!-- frps 模式：显示流量 -->
-          <template v-else-if="column.key === 'trafficIn'">
-            <span text-sm>{{ formatBytes(record.trafficIn || 0) }}</span>
+          <template v-else-if="column.key === 'todayTrafficIn'">
+            <span text-sm>{{ formatBytes(record.todayTrafficIn || 0) }}</span>
           </template>
 
-          <template v-else-if="column.key === 'trafficOut'">
-            <span text-sm>{{ formatBytes(record.trafficOut || 0) }}</span>
+          <template v-else-if="column.key === 'todayTrafficOut'">
+            <span text-sm>{{ formatBytes(record.todayTrafficOut || 0) }}</span>
           </template>
 
           <!-- 操作列 -->
@@ -85,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import type { TableColumnType } from 'ant-design-vue'
 import { message, Modal } from 'ant-design-vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -96,14 +97,14 @@ interface ProxyConfig {
   remotePort?: number
   customDomains?: string[]
   subdomain?: string
-  conns?: number // frps 统计：当前连接数
-  trafficIn?: number // frps 统计：入站流量（字节）
-  trafficOut?: number // frps 统计：出站流量（字节）
+  curConns?: number // frps 统计：当前连接数
+  todayTrafficIn?: number // frps 统计：今日入站流量（字节）
+  todayTrafficOut?: number // frps 统计：今日出站流量（字节）
   [key: string]: any
 }
 
 interface TunnelManagerProps {
-  mode?: 'client' | 'server'
+  mode?: 'client' | 'server' | null
   refreshTrigger?: number
 }
 
@@ -125,8 +126,8 @@ const title = computed(() => t('tunnel.title'))
 const subtitle = computed(() => t('tunnel.description'))
 
 // 表格列定义
-const columns = computed(() => {
-  const baseColumns = [
+const columns = computed<TableColumnType[]>(() => {
+  const baseColumns: TableColumnType[] = [
     {
       title: t('tunnel.tunnelName'),
       dataIndex: 'name',
@@ -152,21 +153,21 @@ const columns = computed(() => {
       },
       {
         title: t('tunnel.connections'),
-        dataIndex: 'conns',
-        key: 'conns',
+        dataIndex: 'curConns',
+        key: 'curConns',
         width: 100,
         align: 'center' as const
       },
       {
         title: t('tunnel.trafficIn'),
-        dataIndex: 'trafficIn',
-        key: 'trafficIn',
+        dataIndex: 'todayTrafficIn',
+        key: 'todayTrafficIn',
         width: 120
       },
       {
         title: t('tunnel.trafficOut'),
-        dataIndex: 'trafficOut',
-        key: 'trafficOut',
+        dataIndex: 'todayTrafficOut',
+        key: 'todayTrafficOut',
         width: 120
       }
     )
@@ -254,17 +255,18 @@ function handleAdd() {
 }
 
 // frpc 模式：编辑隧道
-function handleEdit(record: ProxyConfig) {
+function handleEdit(record: Record<string, any>) {
   drawerMode.value = 'edit'
-  selectedTunnel.value = record
+  selectedTunnel.value = record as ProxyConfig
   drawerOpen.value = true
 }
 
 // frpc 模式：删除隧道
-function handleDelete(record: ProxyConfig) {
+function handleDelete(record: Record<string, any>) {
+  const tunnel = record as ProxyConfig
   Modal.confirm({
     title: t('tunnel.deleteConfirm'),
-    content: t('tunnel.deleteConfirmMessage', { name: record.name }),
+    content: t('tunnel.deleteConfirmMessage', { name: tunnel.name }),
     okText: t('common.confirm'),
     cancelText: t('common.cancel'),
     okButtonProps: { danger: true },

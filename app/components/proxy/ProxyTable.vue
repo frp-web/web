@@ -19,12 +19,12 @@
           </AntTag>
         </template>
 
-        <template v-else-if="column.key === 'trafficIn'">
-          {{ formatTraffic(record.trafficIn) }}
+        <template v-else-if="column.key === 'todayTrafficIn'">
+          {{ formatTraffic(record.todayTrafficIn) }}
         </template>
 
-        <template v-else-if="column.key === 'trafficOut'">
-          {{ formatTraffic(record.trafficOut) }}
+        <template v-else-if="column.key === 'todayTrafficOut'">
+          {{ formatTraffic(record.todayTrafficOut) }}
         </template>
 
         <template v-else-if="column.key === 'localIP'">
@@ -47,9 +47,9 @@ interface ProxyItem {
   remotePort: number
   localPort: number
   localIP: string
-  conns: number
-  trafficIn: number
-  trafficOut: number
+  curConns: number
+  todayTrafficIn: number
+  todayTrafficOut: number
   status: string
   clientVersion: string
   lastStartTime: string
@@ -106,19 +106,19 @@ const columns = computed(() => [
   },
   {
     title: t('tunnel.connections'),
-    dataIndex: 'conns',
-    key: 'conns',
+    dataIndex: 'curConns',
+    key: 'curConns',
     width: 100,
     align: 'center' as const
   },
   {
     title: t('tunnel.trafficIn'),
-    key: 'trafficIn',
+    key: 'todayTrafficIn',
     width: 120
   },
   {
     title: t('tunnel.trafficOut'),
-    key: 'trafficOut',
+    key: 'todayTrafficOut',
     width: 120
   }
 ])
